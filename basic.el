@@ -24,6 +24,28 @@
   (previous-line 20))
 
 
+(defun ak/duplicate ()
+  (interactive)
+  (cond
+   ((string= evil-state "normal")
+    (move-beginning-of-line 1)
+    (kill-line)
+    (yank)
+    (move-beginning-of-line 1)
+    (kill-line)
+    (yank)
+    (open-line 1)
+    (next-line 1)
+    (yank))
+   ((string= evil-state "visual")
+    (setq size (- (region-end) (region-beginning)))
+    ;; (evil-delete (region-beginning) (region-end))
+    (kill-ring-save (region-beginning) (region-end))
+    (yank)
+    ;; (yank)
+    ;; (forw-char)
+    )))
+
 (global-set-key "\M-Y" 'ak/yank-pop-forwards)
 (global-set-key (kbd "<next>") 'ak/half-page-down)
 (global-set-key (kbd "<prior>") 'ak/half-page-up)
@@ -38,7 +60,7 @@
   ;; `fundamental-mode' buffers even after doing \"(global-ak/keymap-mode 1)\".
   ;; More info: http://emacs.stackexchange.com/q/16693/115
   :init-value t
-  :lighter " ak/keymap-mode"
+  :lighter " gmap"
   :keymap ak/keymap-mode-map)
 
 ;;;###autoload
@@ -55,6 +77,7 @@
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
   :config
+  (setq evil-cross-lines t)
   (evil-make-overriding-map ak/keymap-mode-map)
   (evil-mode 1))
 
@@ -69,84 +92,85 @@
   (defalias 'gsk 'general-simulate-keys)
 
   (gmap :keymaps 'dired-mode-map
-        :states '(normal visual motion operator insert emacs hybrid)
-        "o" 'dired-mark
-        "a" 'dired-unmark)
+    :states '(normal visual motion operator insert emacs hybrid)
+    "o" 'dired-mark
+    "a" 'dired-unmark)
 
   (gmap :keymaps 'latex-mode-map
-        "SPC" 'aking/yas-expand-or-self-insert 
-        "q" 'aking/project-sq)
+    "SPC" 'aking/yas-expand-or-self-insert 
+    "q" 'aking/project-sq)
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
-        "s-<return>" 'ak/make
-        "M-s-g" 'ak/generate-makefile)
+    "C-M-S-t" 'mode-line-other-buffer
+    "s-<return>" 'ak/make
+    "M-s-g" 'ak/generate-makefile)
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
-        :predicate '(not (derived-mode-p 'term-mode))
-        "M-<right>" 'forward-word
-        "M-<left>" 'evil-backward-word-begin)
+    :predicate '(not (derived-mode-p 'term-mode))
+    "M-<right>" 'forward-word
+    "M-<left>" 'evil-backward-word-begin)
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
-        "s-<right>" 'move-end-of-line
-        "s-<left>" 'back-to-indentation)
+    "s-<right>" 'move-end-of-line
+    "s-<left>" 'back-to-indentation)
   
   (gmap :states '(normal visual motion)
-        :keymaps 'magit-status-mode-map
-        "k" 'magit-commit-popup
-        "j" 'magit-rebase-popup
-        "c" 'evil-next-line
-        "r" 'evil-previous-line)
+    :keymaps 'magit-status-mode-map
+    "k" 'magit-commit-popup
+    "j" 'magit-rebase-popup
+    "c" 'evil-next-line
+    "r" 'evil-previous-line)
 
   (gmap :states '(normal visual motion operator)
-        :predicate '(not (derived-mode-p 'magit-status-mode))
+    :predicate '(not (derived-mode-p 'magit-status-mode))
+    "t" 'evil-forward-char
+    "m" 'evil-backward-char
+    "v" 'evil-forward-word-end
+    "V" 'evil-backward-word-end
+    "n" 'evil-forward-word-begin
+    "N" 'evil-forward-WORD-begin
+    "_" 'evil-first-non-blank
+    "z" 'evil-first-non-blank
+    "s" 'evil-end-of-line
+    "c" 'evil-next-line
+    "r" 'evil-previous-line
+    "f" 'ak/half-page-up
+    "g" 'ak/half-page-down
 
-        "C-M-\\" 'spacemacs/indent-region-or-buffer
+    "w" 'evil-ex-search-next
+    "W" 'evil-ex-search-previous
+    "h" 'evil-find-char-to
+					;"z" 'evil-jump-item
+    "(" (gsk "C-o")
+    ")" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
 
-        "n" 'evil-forward-word-begin
-        "N" 'evil-forward-WORD-begin
-        "z" 'evil-ex-search-next
-        "Z" 'evil-ex-search-previous
+    "d" 'evil-visual-line
+    "D" 'evil-visual-char
+    
+    "e" 'evil-delete
+    "l" 'evil-change
+    "k" 'evil-delete-char
+    "K" 'evil-delete-backward-char
+    "'" 'evil-join
+    "J" (gsk "a <return>")
+    "C-d" 'ak/duplicate
 
-        "_" 'evil-first-non-blank
-        "s" 'evil-end-of-line
+    "C-e" 'move-end-of-line
+    "C-a" 'evil-first-non-blank)
 
-        "j" 'evil-forward-word-end
-        "'" 'evil-join
-        "J" (gsk "a <return>")
+  (gmap :states '(normal)
+    :predicate '(not (derived-mode-p 'magit-status-mode))
+    "C" (gsk "0 D c s")
+    "R" (gsk "s D r")
+    "G" (gsk "D r s o")
+    "F" (gsk "D s o r"))
 
-        "z" 'evil-jump-item
-        "e" 'evil-delete
-        "d" 'evil-find-char-to
-        "t" 'evil-forward-char
-        "m" 'evil-backward-char
-        "c" 'evil-next-line
-        "r" 'evil-previous-line
-
-        "/" 'evil-ex-search-forward
-        "?" 'evil-ex-search-backward
-
-        "C-M-S-t" 'mode-line-other-buffer
-        "TAB" 'evil-visual-line
-        "d" 'evil-visual-line
-
-        "C-d" 'duplicate-line
-
-        "f" (gsk "20r")
-        "g" (gsk "20c")
-
-        "h" 'evil-find-char-to)
-
-  (gmap :states '('normal 'visual)
-        :predicate '(not (derived-mode-p 'magit-status-mode))
-        "k" 'evil-delete-char
-        "K" 'evil-delete-backward-char
-        "l" 'evil-change
-
-        "(" (gsk "C-o")
-        ")" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace)))
-
+  (gmap :states '(visual)
+    :predicate '(not (derived-mode-p 'magit-status-mode))
+    "C" (gsk "c")
+    "R" (gsk "r"))
+  
   (gmap :states '(insert hybrid)
-        :predicate '(not (string= (buffer-name) "*terminal*"))
-        "C-e" 'move-end-of-line
-        "C-a" 'evil-first-non-blank)
-)
+    :predicate '(not (string= (buffer-name) "*terminal*"))
+    "C-e" 'move-end-of-line
+    "C-a" 'evil-first-non-blank))
