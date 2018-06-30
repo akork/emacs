@@ -10,21 +10,30 @@
 
 (setq scroll-margin 8)
 (setq scroll-conservatively 10000)
+(save-place-mode 1)
 
-(defun ak/yank-pop-forwards (arg)
+(defun ak-indent-buffer ()
+  (interactive)
+  (save-excursion
+    (save-restriction
+      (mark-whole-buffer)
+      (indent-region (region-beginning) (region-end))
+      (setq transient-mark-mode nil))))
+
+(defun ak-yank-pop-forwards (arg)
   (interactive "p")
   (yank-pop (- arg)))
 
-(defun ak/half-page-down ()
+(defun ak-half-page-down ()
   (interactive)
   (next-line 20))
 
-(defun ak/half-page-up ()
+(defun ak-half-page-up ()
   (interactive)
   (previous-line 20))
 
 
-(defun ak/duplicate ()
+(defun ak-duplicate ()
   (interactive)
   (cond
    ((string= evil-state "normal")
@@ -46,39 +55,39 @@
     ;; (forw-char)
     )))
 
-(global-set-key "\M-Y" 'ak/yank-pop-forwards)
-(global-set-key (kbd "<next>") 'ak/half-page-down)
-(global-set-key (kbd "<prior>") 'ak/half-page-up)
+(global-set-key "\M-Y" 'ak-yank-pop-forwards)
+(global-set-key (kbd "<next>") 'ak-half-page-down)
+(global-set-key (kbd "<prior>") 'ak-half-page-up)
 
-(defvar ak/keymap-mode-map (make-sparse-keymap)
-  "Keymap for `ak/keymap-mode'.")
+(defvar ak-keymap-mode-map (make-sparse-keymap)
+  "Keymap for `ak-keymap-mode'.")
 
 ;;;###autoload
-(define-minor-mode ak/keymap-mode
+(define-minor-mode ak-keymap-mode
   "A minor mode so that my key settings override annoying major modes."
   ;; If init-value is not set to t, this mode does not get enabled in
-  ;; `fundamental-mode' buffers even after doing \"(global-ak/keymap-mode 1)\".
+  ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
   ;; More info: http://emacs.stackexchange.com/q/16693/115
   :init-value t
   :lighter " gmap"
-  :keymap ak/keymap-mode-map)
+  :keymap ak-keymap-mode-map)
 
 ;;;###autoload
-(define-globalized-minor-mode global-ak/keymap-mode ak/keymap-mode ak/keymap-mode)
+(define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode ak-keymap-mode)
 
 ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
 ;; The keymaps in `emulation-mode-map-alists' take precedence over
 ;; `minor-mode-map-alist'
 
-                                        ;(delight 'ak/keymap-mode nil ak/keymap-mode) ; do not display mode name in mode line
+                                        ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
 
-(add-to-list 'emulation-mode-map-alists `((ak/keymap-mode . ,ak/keymap-mode-map)))
+(add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
 
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
   :config
   (setq evil-cross-lines t)
-  (evil-make-overriding-map ak/keymap-mode-map)
+  (evil-make-overriding-map ak-keymap-mode-map)
   (evil-mode 1))
 
 (add-to-list 'load-path "~/.emacs.d/general")
@@ -86,7 +95,7 @@
   :config
   (general-evil-setup t)
   (general-create-definer bmap)
-  (general-create-definer gmap :keymaps 'ak/keymap-mode-map)
+  (general-create-definer gmap :keymaps 'ak-keymap-mode-map)
 
   (defalias 'gkd 'general-key-dispatch)
   (defalias 'gsk 'general-simulate-keys)
@@ -102,8 +111,8 @@
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
     "C-M-S-t" 'mode-line-other-buffer
-    "s-<return>" 'ak/make
-    "M-s-g" 'ak/generate-makefile)
+    "s-<return>" 'ak-make
+    "M-s-g" 'ak-generate-makefile)
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
     :predicate '(not (derived-mode-p 'term-mode))
@@ -129,22 +138,21 @@
     "V" 'evil-backward-word-end
     "n" 'evil-forward-word-begin
     "N" 'evil-forward-WORD-begin
-    "_" 'evil-first-non-blank
-    "z" 'evil-first-non-blank
+    "d" 'evil-first-non-blank
     "s" 'evil-end-of-line
     "c" 'evil-next-line
     "r" 'evil-previous-line
-    "f" 'ak/half-page-up
-    "g" 'ak/half-page-down
+    "f" 'ak-half-page-up
+    "g" 'ak-half-page-down
 
     "w" 'evil-ex-search-next
     "W" 'evil-ex-search-previous
     "h" 'evil-find-char-to
-					;"z" 'evil-jump-item
+    "_" 'evil-find-char
+    ;;"z" 'evil-jump-item
     "(" (gsk "C-o")
     ")" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
 
-    "d" 'evil-visual-line
     "D" 'evil-visual-char
     
     "e" 'evil-delete
@@ -153,7 +161,7 @@
     "K" 'evil-delete-backward-char
     "'" 'evil-join
     "J" (gsk "a <return>")
-    "C-d" 'ak/duplicate
+    "C-d" 'ak-duplicate
 
     "C-e" 'move-end-of-line
     "C-a" 'evil-first-non-blank)
@@ -167,8 +175,10 @@
 
   (gmap :states '(visual)
     :predicate '(not (derived-mode-p 'magit-status-mode))
-    "C" (gsk "c")
-    "R" (gsk "r"))
+    "C" 'evil-next-line
+    "G" 'evil-next-line
+    "R" 'evil-previous-line
+    "F" 'evil-previous-line)
   
   (gmap :states '(insert hybrid)
     :predicate '(not (string= (buffer-name) "*terminal*"))
