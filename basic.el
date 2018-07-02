@@ -149,7 +149,7 @@
     "W" 'evil-ex-search-previous
     "h" 'evil-find-char-to
     "_" 'evil-find-char
-    ;;"z" 'evil-jump-item
+    "z" 'evil-jump-item
     "(" (gsk "C-o")
     ")" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
 
