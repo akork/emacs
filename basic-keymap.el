@@ -1,6 +1,6 @@
-;; (add-to-list 'load-path "~/.emacs.d/general")
-;; (use-package general
-;;   :config
+(add-to-list 'load-path "~/.emacs.d/general")
+(use-package general
+  :config
   (general-evil-setup t)
   (general-create-definer bmap)
   (general-create-definer gmap :keymaps 'ak-keymap-mode-map)
@@ -18,6 +18,7 @@
     "q" 'aking/project-sq)
 
   (gmap :states '(normal visual motion operator insert emacs hybrid)
+    "C-M-b" 'buffer-menu
     "C-M-S-t" 'mode-line-other-buffer
     "s-<return>" 'ak-make
     "M-s-g" 'ak-generate-makefile)
@@ -93,5 +94,4 @@
   (gmap :states '(insert hybrid)
     :predicate '(not (string= (buffer-name) "*terminal*"))
     "C-e" 'move-end-of-line
-    "C-a" 'evil-first-non-blank)
-;; )
+    "C-a" 'evil-first-non-blank))
