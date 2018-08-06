@@ -1,0 +1,5 @@
+(defun ak-previous-open-brace ()
+  (interactive)
+  (previous-line)
+  (end-of-line)
+  (evil-previous-open-brace))
