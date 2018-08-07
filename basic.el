@@ -89,6 +89,3 @@
   (setq evil-cross-lines t)
   (evil-make-overriding-map ak-keymap-mode-map)
   (evil-mode 1))
-
-(load "/Users/Aleksey/Dropbox/Settings/emacs/basic-funcs.el")
-(load "/Users/Aleksey/Dropbox/Settings/emacs/basic-keymap.el")

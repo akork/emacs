@@ -8,10 +8,9 @@
              "u" 'undo-tree-redo
              "m" 'aking/latex-convert-to-big
              "p"
-             (gkd 'current-file-name :timeout 0.5
-                  "p" 'current-file-dir
-                  ;; "m" 'current-mode
-                  )
+             (gkd 'ak-current-file-name :timeout 0.5
+                  "p" 'ak-current-file-dir
+                  "m" 'ak-current-mode)
              "d"
              (gkd 'edit-config-keymap :timeout 0.5
                   "h" 'aking/conf-hammerspoon
