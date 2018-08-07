@@ -1,16 +1,34 @@
+(require 'package)
+
+(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+                    (not (gnutls-available-p))))
+       (proto (if no-ssl "http" "https")))
+  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
+  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
+  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
+  (when (< emacs-major-version 24)
+    ;; For important compatibility libraries like cl-lib
+    (add-to-list 'package-archives '("gnu" . (concat proto "://elpa.gnu.org/packages/")))))
 (package-initialize)
 
 (add-to-list 'load-path "~/.emacs.d/use-package")
 (require 'use-package)
 
-(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-(add-to-list 'default-frame-alist '(ns-appearance . dark))
+(require 'org)
+(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
+ ;; (expand-file-name "/users/aleksey/dropbox/settings/emacs/basic.org"
+ ;;                   user-emacs-directory))
 
-(load-theme 'manoj-dark)
+;; (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+;;   (add-to-list 'default-frame-alist '(ns-appearance . dark))
 
-(setq scroll-margin 8)
-(setq scroll-conservatively 10000)
-(save-place-mode 1)
+;;   (load-theme 'manoj-dark)
+;;   (setq visible-bell 1)
+;;   (setq scroll-margin 8)
+;;   (setq scroll-conservatively 10000)
+;;   (save-place-mode 1)
+
+;; (require 'column-marker)
 
 (defun ak-indent-buffer ()
   (interactive)
