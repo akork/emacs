@@ -1,6 +1,7 @@
 * theme
   #+BEGIN_SRC emacs-lisp
     (load-theme 'dracula t)
+    (menu-bar-mode -1)
   #+END_SRC
 * basic
   #+BEGIN_SRC emacs-lisp
@@ -11,8 +12,6 @@
     (setq scroll-margin 8)
     (setq scroll-conservatively 10000)
     (save-place-mode 1)
-    (setq-default header-line-format 
-		  (list " " (make-string 79 ?-) "|"))
 
     (setq whitespace-style (quote (lines-tail))
       whitespace-line-column 80)

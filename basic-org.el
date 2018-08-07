@@ -1,4 +1,5 @@
 (load-theme 'dracula t)
+(menu-bar-mode -1)
 
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(ns-appearance . dark))

@@ -41,6 +41,12 @@
     "c" 'evil-next-line
     "r" 'evil-previous-line)
 
+  (defun ak-org-edit-src ()
+    (interactive)
+    (if (derived-mode-p 'org-mode)
+	(org-edit-special)
+      (org-edit-src-exit)))
+
   (gmap :states '(normal visual motion operator)
     :predicate '(not (derived-mode-p 'magit-status-mode))
     "t" 'evil-forward-char
@@ -58,7 +64,8 @@
 
     "w" 'evil-ex-search-next
     "W" 'evil-ex-search-previous
-    "h" 'evil-find-char-to
+    "h" (gkd 'evil-find-char-to :timeout 0.5
+	     "h" 'ak-org-edit-src)
     "_" 'evil-find-char
     "z" 'evil-jump-item
     ")" (gsk "C-o")
@@ -78,6 +85,13 @@
 
     "C-e" 'move-end-of-line
     "C-a" 'evil-first-non-blank)
+
+  (gmap :states '(normal visual motion)
+    :predicate '(derived-mode-p 'org-mode)
+    "TAB" 'org-cycle
+    "(" 'outline-up-heading
+    "h" 'org-edit-special)
+
 
   (gmap :states '(normal)
     :predicate '(not (derived-mode-p 'magit-status-mode))
