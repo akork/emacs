@@ -1,6 +1,5 @@
 (add-to-list 'load-path "~/.emacs.d/general")
 
-
 (use-package general
   :config
   (general-evil-setup t)
@@ -33,22 +32,9 @@
   (gmap :states '(normal visual motion operator insert emacs hybrid)
     "s-<right>" 'move-end-of-line
     "s-<left>" 'back-to-indentation)
-  
-  (gmap :states '(normal visual motion)
-    :keymaps 'magit-status-mode-map
-    "k" 'magit-commit-popup
-    "j" 'magit-rebase-popup
-    "c" 'evil-next-line
-    "r" 'evil-previous-line)
-
-  (defun ak-org-edit-src ()
-    (interactive)
-    (if (derived-mode-p 'org-mode)
-	(org-edit-special)
-      (org-edit-src-exit)))
 
   (gmap :states '(normal visual motion operator)
-    :predicate '(not (derived-mode-p 'magit-status-mode))
+    ;; :predicate '(not (derived-mode-p 'magit-status-mode))
     "t" 'evil-forward-char
     "m" 'evil-backward-char
     "v" 'evil-forward-word-end
@@ -72,7 +58,6 @@
     ;; bug in evil-previous-open-brace : evil-first-non-blank needed
     "(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
 
-
     "D" 'evil-visual-char
     
     "e" 'evil-delete
@@ -84,14 +69,20 @@
     "C-d" 'ak-duplicate
 
     "C-e" 'move-end-of-line
-    "C-a" 'evil-first-non-blank)
+    "C-a" 'evil-first-non-blank
+    "DEL" 'projectile-find-file)
 
   (gmap :states '(normal visual motion)
     :predicate '(derived-mode-p 'org-mode)
     "TAB" 'org-cycle
-    "(" 'outline-up-heading
-    "h" 'org-edit-special)
-
+    "(" 'outline-up-heading)
+  
+  ;; (gmap :states '(normal visual motion)
+  ;;   :predicate '(derived-mode-p 'magit-status-mode)
+  ;;   "k" 'magit-commit-popup
+  ;;   "j" 'magit-rebase-popup
+  ;;   "c" 'evil-next-line
+  ;;   "r" 'evil-previous-line)
 
   (gmap :states '(normal)
     :predicate '(not (derived-mode-p 'magit-status-mode))
