@@ -13,11 +13,51 @@
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (add-to-list 'default-frame-alist '(ns-appearance . dark))
   #+END_SRC
-* basic
+* evil setup
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path "~/.emacs.d/evil")
+  (use-package evil
+    :config
+    (setq evil-cross-lines t)
+    ;; (evil-make-overriding-map ak-keymap-mode-map)
+    (evil-mode 1))
+#+END_SRC
+* overriding keymap
   #+BEGIN_SRC emacs-lisp
-    (setq whitespace-style (quote (lines-tail))
-      whitespace-line-column 80)
-    (global-whitespace-mode 1)
+    (defvar ak-keymap-mode-map (make-sparse-keymap)
+      "Keymap for `ak-kkeymap-mode'.")
+
+	      ;;;###autoload
+    (define-minor-mode ak-keymap-mode
+      "A minor mode so that my key settings override annoying major modes."
+      ;; If init-value is not set to t, this mode does not get enabled in
+      ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
+      ;; More info: http://emacs.stackexchange.com/q/16693/115
+      :init-value t
+      :lighter " gmap"
+      :keymap ak-keymap-mode-map)
+
+	      ;;;###autoload
+    (define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode 
+      (lambda ()
+	(when (not (derived-mode-p
+			 'dired-mode 'org-mode))
+	  (ak-keymap-mode)))
+      )
+
+    ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
+    ;; The keymaps in `emulation-mode-map-alists' take precedence over
+    ;; `minor-mode-map-alist'
+
+					    ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
+
+    (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
+
+    (defun turn-off-my-mode ()
+      "Turn off my-mode."
+      (ak-keymap-mode -1))
+
+    (add-hook 'dired-mode-hook #'turn-off-my-mode)
   #+END_SRC
 * funcs ->
 ** basic
@@ -40,7 +80,7 @@
        (if (use-region-p)
 	   (eval-region)
 	 (eval-last-sexp (point))))
-  
+
      (defun ak-indent-buffer ()
        (interactive)
        (save-excursion
@@ -78,37 +118,6 @@
 	 )))
 
      (global-set-key "\M-Y" 'ak-yank-pop-forwards)
-
-     (defvar ak-keymap-mode-map (make-sparse-keymap)
-       "Keymap for `ak-keymap-mode'.")
-
-	  ;;;###autoload
-     (define-minor-mode ak-keymap-mode
-       "A minor mode so that my key settings override annoying major modes."
-       ;; If init-value is not set to t, this mode does not get enabled in
-       ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
-       ;; More info: http://emacs.stackexchange.com/q/16693/115
-       :init-value t
-       :lighter " gmap"
-       :keymap ak-keymap-mode-map)
-
-	  ;;;###autoload
-     (define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode ak-keymap-mode)
-
-     ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
-     ;; The keymaps in `emulation-mode-map-alists' take precedence over
-     ;; `minor-mode-map-alist'
-
-					     ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
-
-     (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
-
-     (add-to-list 'load-path "~/.emacs.d/evil")
-     (use-package evil
-       :config
-       (setq evil-cross-lines t)
-       (evil-make-overriding-map ak-keymap-mode-map)
-       (evil-mode 1))
 
    #+END_SRC
 ** current items
@@ -157,116 +166,130 @@
    #+END_SRC
 * keymaps
   #+BEGIN_SRC emacs-lisp
-  (add-to-list 'load-path "~/.emacs.d/general")
+    (add-to-list 'load-path "~/.emacs.d/general")
 
-  (use-package general
-    :config
-    (general-evil-setup t)
-    (general-create-definer bmap)
-    (general-create-definer gmap :keymaps 'ak-keymap-mode-map)
+    (use-package general
+      :config
+      (general-evil-setup t)
+      (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
+      (general-create-definer gdk)
 
-    (defalias 'gkd 'general-key-dispatch)
-    (defalias 'gsk 'general-simulate-keys)
+      (defalias 'gkd 'general-key-dispatch)
+      (defalias 'gsk 'general-simulate-keys)
 
-    (gmap :keymaps 'dired-mode-map
-      :states '(normal visual motion operator insert emacs hybrid)
-      "o" 'dired-mark
-      "a" 'dired-unmark)
+      (gdk-ov :keymaps 'dired-mode-map
+	:states '(normal visual motion operator insert emacs hybrid)
+	"o" 'dired-mark
+	"a" 'dired-unmark)
 
-    (gmap :keymaps 'latex-mode-map
-      "SPC" 'aking/yas-expand-or-self-insert 
-      "q" 'aking/project-sq)
+      (gdk-ov :keymaps 'latex-mode-map
+	"SPC" 'aking/yas-expand-or-self-insert 
+	"q" 'aking/project-sq)
 
-    (gmap :states '(normal visual motion operator insert emacs hybrid)
-      "C-M-b" 'buffer-menu
-      "C-M-S-t" 'mode-line-other-buffer
-      "s-<return>" 'ak-make
-      "M-s-g" 'ak-generate-makefile)
+      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
+	"C-M-b" 'buffer-menu
+	"C-M-S-t" 'mode-line-other-buffer
+	"s-<return>" 'ak-make
+	"M-s-g" 'ak-generate-makefile)
 
-    (gmap :states '(normal visual motion operator insert emacs hybrid)
-      :predicate '(not (derived-mode-p 'term-mode))
-      "M-<right>" 'forward-word
-      "M-<left>" 'evil-backward-word-begin)
+      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
+	:predicate '(not (derived-mode-p 'term-mode))
+	"M-<right>" 'forward-word
+	"M-<left>" 'evil-backward-word-begin)
 
-    (gmap :states '(normal visual motion operator insert emacs hybrid)
-      "s-<right>" 'move-end-of-line
-      "s-<left>" 'back-to-indentation)
+      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
+	"s-<right>" 'move-end-of-line
+	"s-<left>" 'back-to-indentation)
 
-    (gmap :states '(normal visual motion operator)
-      ;; :predicate '(not (derived-mode-p 'magit-status-mode))
-      "t" 'evil-forward-char
-      "m" 'evil-backward-char
-      "v" 'evil-forward-word-end
-      "V" 'evil-backward-word-end
-      "n" 'evil-forward-word-begin
-      "N" 'evil-forward-WORD-begin
-      "d" 'evil-first-non-blank
-      "s" 'evil-end-of-line
-      "c" 'evil-next-line
-      "r" 'evil-previous-line
-      "f" 'ak-half-page-up
-      "g" 'ak-half-page-down
+      (gdk-ov :states '(normal visual motion operator)
+	:predicate '(not (derived-mode-p 'magit-status-mode))
+	"t" 'evil-forward-char
+	"m" 'evil-backward-char
+	"v" 'evil-forward-word-end
+	"V" 'evil-backward-word-end
+	"n" 'evil-forward-word-begin
+	"N" 'evil-forward-WORD-begin
+	"d" 'evil-first-non-blank
+	"s" 'evil-end-of-line
+	"c" 'evil-next-line
+	"r" 'evil-previous-line
+	"f" 'ak-half-page-up
+	"g" 'ak-half-page-down
 
-      "w" 'evil-ex-search-next
-      "W" 'evil-ex-search-previous
-      "h" (gkd 'evil-find-char-to :timeout 0.5
-	       "h" 'ak-org-edit-src)
-      "_" 'evil-find-char
-      "z" 'evil-jump-item
-      ")" (gsk "C-o")
-      ;; bug in evil-previous-open-brace : evil-first-non-blank needed
-      "(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
+	"w" 'evil-ex-search-next
+	"W" 'evil-ex-search-previous
+	"h" (gkd 'evil-find-char-to :timeout 0.5
+		 "h" 'ak-org-edit-src)
+	"_" 'evil-find-char
+	"z" 'evil-jump-item
+	")" (gsk "C-o")
+	;; bug in evil-previous-open-brace : evil-first-non-blank needed
+	"(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
 
-      "D" 'evil-visual-char
+	"D" 'evil-visual-char
 
-      "e" 'evil-delete
-      "l" 'evil-change
-      "k" 'evil-delete-char
-      "K" 'evil-delete-backward-char
-      "'" 'evil-join
-      "J" (gsk "a <return>")
-      "C-d" 'ak-duplicate
+	"e" 'evil-delete
+	"l" 'evil-change
+	"k" 'evil-delete-char
+	"K" 'evil-delete-backward-char
+	"'" 'evil-join
+	"J" (gsk "a <return>")
+	"C-d" 'ak-duplicate
 
-      "C-e" 'move-end-of-line
-      "C-a" 'evil-first-non-blank
-      "DEL" 'projectile-find-file)
+	"C-e" 'move-end-of-line
+	"C-a" 'evil-first-non-blank
+	"DEL" 'projectile-find-file)
 
-    (gmap :states '(normal visual motion)
-      :predicate '(derived-mode-p 'org-mode)
-      "TAB" 'org-cycle
-      "." 'org-cycle
-      "(" 'outline-up-heading)
+      (gdk-ov :states '(normal visual motion)
+	:predicate '(derived-mode-p 'org-mode)
+	"TAB" 'org-cycle
+	"." 'org-cycle
+	"(" 'outline-up-heading)
 
-    ;; (gmap :states '(normal visual motion)
-    ;;   :predicate '(derived-mode-p 'magit-status-mode)
-    ;;   "k" 'magit-commit-popup
-    ;;   "j" 'magit-rebase-popup
-    ;;   "c" 'evil-next-line
-    ;;   "r" 'evil-previous-line)
 
-    (gmap :states '(normal)
-      :predicate '(not (derived-mode-p 'magit-status-mode))
-      "C" (gsk "0 D c s")
-      "R" (gsk "s D r")
-      "G" (gsk "D r s o")
-      "F" (gsk "D s o r"))
+      (gdk :states '(normal visual motion)
+	:keymaps 'dired-mode-map
+	;; :predicate '(derived-mode-p 'dired-mode)
+	"c" 'dired-next-line
+	"r" 'dired-previous-line
+	"g" 'dired-next-dirline
+	"f" 'dired-prev-dirline
+	"m" 'dired-mark
+	"d" 'dired-flag-file-deletion
+	"C" 'dired-copy-file
+	"R" 'dired-do-rename
+	"z" 'dired-up-directory)
 
-    (gmap :states '(visual)
-      :predicate '(not (derived-mode-p 'magit-status-mode))
-      "C" 'evil-next-line
-      "G" 'evil-next-line
-      "R" 'evil-previous-line
-      "F" 'evil-previous-line)
+      ;; (gdk-ov :states '(normal visual motion)
+      ;;   :predicate '(derived-mode-p 'magit-status-mode)
+      ;;   "k" 'magit-commit-popup
+      ;;   "j" 'magit-rebase-popup
+      ;;   "c" 'evil-next-line
+      ;;   "r" 'evil-previous-line)
 
-    (gmap :states '(insert hybrid)
-      :predicate '(not (string= (buffer-name) "*terminal*"))
-      "C-e" 'move-end-of-line
-      "C-a" 'evil-first-non-blank))
+      (gdk-ov :states '(normal)
+	:predicate '(not (derived-mode-p 'magit-status-mode))
+	"C" (gsk "0 D c s")
+	"R" (gsk "s D r")
+	"G" (gsk "D r s o")
+	"F" (gsk "D s o r"))
+
+      (gdk-ov :states '(visual)
+	:predicate '(not (derived-mode-p 'magit-status-mode))
+	"C" 'evil-next-line
+	"G" 'evil-next-line
+	"R" 'evil-previous-line
+	"F" 'evil-previous-line)
+
+      (gdk-ov :states '(insert hybrid)
+	:predicate '(not (string= (buffer-name) "*terminal*"))
+	"C-e" 'move-end-of-line
+	"C-a" 'evil-first-non-blank))
 
   #+END_SRC
 * leader-map
   #+BEGIN_SRC emacs-lisp
-    (gmap :states '(emacs motion normal visual)
+    (gdk :states '(emacs motion normal visual)
 	  ;; :keymaps 'doc-view-mode-map
 	  "SPC"
 	  (gkd 'helm-projectile-switch-project :timeout 1
