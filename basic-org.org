@@ -13,15 +13,6 @@
     (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
     (add-to-list 'default-frame-alist '(ns-appearance . dark))
   #+END_SRC
-* evil setup
-#+BEGIN_SRC emacs-lisp
-  (add-to-list 'load-path "~/.emacs.d/evil")
-  (use-package evil
-    :config
-    (setq evil-cross-lines t)
-    ;; (evil-make-overriding-map ak-keymap-mode-map)
-    (evil-mode 1))
-#+END_SRC
 * overriding keymap
   #+BEGIN_SRC emacs-lisp
     (defvar ak-keymap-mode-map (make-sparse-keymap)
@@ -51,15 +42,25 @@
 
 					    ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
 
-    (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
+    ;; (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
 
     (defun turn-off-my-mode ()
       "Turn off my-mode."
       (ak-keymap-mode -1))
 
     (add-hook 'dired-mode-hook #'turn-off-my-mode)
+
   #+END_SRC
-* funcs ->
+* evil setup
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path "~/.emacs.d/evil")
+  (use-package evil
+    :config
+    (setq evil-cross-lines t)
+    ;; (evil-make-overriding-map ak-keymap-mode-map)
+    (evil-mode 1))
+#+END_SRC
+* funcs
 ** basic
    #+BEGIN_SRC emacs-lisp
      (defun ak-half-page-down ()
@@ -177,79 +178,80 @@
       (defalias 'gkd 'general-key-dispatch)
       (defalias 'gsk 'general-simulate-keys)
 
-      (gdk-ov :keymaps 'dired-mode-map
-	:states '(normal visual motion operator insert emacs hybrid)
-	"o" 'dired-mark
-	"a" 'dired-unmark)
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;; global
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-      (gdk-ov :keymaps 'latex-mode-map
-	"SPC" 'aking/yas-expand-or-self-insert 
-	"q" 'aking/project-sq)
-
-      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
+      (gdk :states '(motion normal visual operator insert emacs)
 	"C-M-b" 'buffer-menu
 	"C-M-S-t" 'mode-line-other-buffer
 	"s-<return>" 'ak-make
-	"M-s-g" 'ak-generate-makefile)
-
-      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
-	:predicate '(not (derived-mode-p 'term-mode))
+	"M-s-g" 'ak-generate-makefile
+	"C-M-i" 'evil-jump-item
+	"C-w" 'backward-char
+	;;    :predicate '(not (derived-mode-p 'term-mode))
 	"M-<right>" 'forward-word
-	"M-<left>" 'evil-backward-word-begin)
-
-      (gdk-ov :states '(normal visual motion operator insert emacs hybrid)
+	"M-<left>" 'evil-backward-word-begin
 	"s-<right>" 'move-end-of-line
 	"s-<left>" 'back-to-indentation)
 
-      (gdk-ov :states '(normal visual motion operator)
-	:predicate '(not (derived-mode-p 'magit-status-mode))
+      (gdk :states '(motion normal visual operator)
+	;; basic movement:
 	"t" 'evil-forward-char
 	"m" 'evil-backward-char
-	"v" 'evil-forward-word-end
-	"V" 'evil-backward-word-end
 	"n" 'evil-forward-word-begin
 	"N" 'evil-forward-WORD-begin
 	"d" 'evil-first-non-blank
+	"C-a" 'evil-first-non-blank
 	"s" 'evil-end-of-line
+	"C-e" 'move-end-of-line
 	"c" 'evil-next-line
 	"r" 'evil-previous-line
 	"f" 'ak-half-page-up
 	"g" 'ak-half-page-down
-
+	;; advanced movement:
 	"w" 'evil-ex-search-next
 	"W" 'evil-ex-search-previous
-	"h" (gkd 'evil-find-char-to :timeout 0.5
+	"h" (gkd 'evil-search-forward :timeout 0.5
 		 "h" 'ak-org-edit-src)
 	"_" 'evil-find-char
 	"z" 'evil-jump-item
 	")" (gsk "C-o")
-	;; bug in evil-previous-open-brace : evil-first-non-blank needed
+	;;; bug in evil-previous-open-brace : evil-first-non-blank needed
 	"(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-
+	;; state changing:
 	"D" 'evil-visual-char
-
+	"v" 'evil-visual-char
+	;; delete/change:
 	"e" 'evil-delete
 	"l" 'evil-change
 	"k" 'evil-delete-char
 	"K" 'evil-delete-backward-char
+	;; misc:
 	"'" 'evil-join
 	"J" (gsk "a <return>")
 	"C-d" 'ak-duplicate
-
-	"C-e" 'move-end-of-line
-	"C-a" 'evil-first-non-blank
 	"DEL" 'projectile-find-file)
 
-      (gdk-ov :states '(normal visual motion)
-	:predicate '(derived-mode-p 'org-mode)
+      (gdk :states '(motion normal)
+	"Z" (gsk "D %")
+	"C" (gsk "0 D c s")
+	"R" (gsk "s D r")
+	"G" (gsk "D r s o")
+	"F" (gsk "D s o r"))
+
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;; mode specific
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+      (gdk :keymaps 'org-mode-map
+	:states '(motion normal visual)
 	"TAB" 'org-cycle
 	"." 'org-cycle
 	"(" 'outline-up-heading)
 
-
-      (gdk :states '(normal visual motion)
-	:keymaps 'dired-mode-map
-	;; :predicate '(derived-mode-p 'dired-mode)
+      (gdk :keymaps 'dired-mode-map
+	:states '(motion normal visual)
 	"c" 'dired-next-line
 	"r" 'dired-previous-line
 	"g" 'dired-next-dirline
@@ -260,31 +262,16 @@
 	"R" 'dired-do-rename
 	"z" 'dired-up-directory)
 
-      ;; (gdk-ov :states '(normal visual motion)
+      ;; (gdk-ov :states '(motion normal visual)
       ;;   :predicate '(derived-mode-p 'magit-status-mode)
       ;;   "k" 'magit-commit-popup
       ;;   "j" 'magit-rebase-popup
       ;;   "c" 'evil-next-line
       ;;   "r" 'evil-previous-line)
 
-      (gdk-ov :states '(normal)
-	:predicate '(not (derived-mode-p 'magit-status-mode))
-	"C" (gsk "0 D c s")
-	"R" (gsk "s D r")
-	"G" (gsk "D r s o")
-	"F" (gsk "D s o r"))
-
-      (gdk-ov :states '(visual)
-	:predicate '(not (derived-mode-p 'magit-status-mode))
-	"C" 'evil-next-line
-	"G" 'evil-next-line
-	"R" 'evil-previous-line
-	"F" 'evil-previous-line)
-
-      (gdk-ov :states '(insert hybrid)
-	:predicate '(not (string= (buffer-name) "*terminal*"))
-	"C-e" 'move-end-of-line
-	"C-a" 'evil-first-non-blank))
+      (gdk :keymaps 'latex-mode-map
+	"SPC" 'aking/yas-expand-or-self-insert 
+	"q" 'aking/project-sq))
 
   #+END_SRC
 * leader-map
