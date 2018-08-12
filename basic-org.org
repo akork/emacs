@@ -2,6 +2,8 @@
   #+BEGIN_SRC emacs-lisp
     (load-theme 'dracula t)
     (menu-bar-mode -1)
+    (setq display-line-numbers-type 'relative)
+    (global-display-line-numbers-mode)
   #+END_SRC
 * feel
   #+BEGIN_SRC emacs-lisp
@@ -56,7 +58,7 @@
   (add-to-list 'load-path "~/.emacs.d/evil")
   (use-package evil
     :config
-    (setq evil-cross-lines t)
+    (setq evil-cross-lines nil)
     ;; (evil-make-overriding-map ak-keymap-mode-map)
     (evil-mode 1))
 #+END_SRC
@@ -76,6 +78,24 @@
    #+END_SRC
 ** misc
    #+BEGIN_SRC emacs-lisp
+     (defun ak-paste-appending-nl ()
+       (interactive)
+       (evil-paste-before 1)
+       (forward-char)
+       (insert "\n")
+       (indent-for-tab-command))
+       
+     (defun ak-paste-prepending-nl ()
+       (interactive)
+       ;; (set-mark-command 4)
+       (set-mark-command nil)
+       (insert "\n")
+       (save-excursion
+	 (yank)
+	 (indent-region (mark) (point))
+	 (deactivate-mark))
+       (indent-for-tab-command))
+
      (defun ak-eval ()
        (interactive)
        (if (use-region-p)
@@ -110,60 +130,58 @@
 	 (next-line 1)
 	 (yank))
 	((string= evil-state "visual")
-	 (setq size (- (region-end) (region-beginning)))
+	 ;; (setq size (- (region-end) (region-beginning)))
 	 ;; (evil-delete (region-beginning) (region-end))
 	 (kill-ring-save (region-beginning) (region-end))
-	 (yank)
-	 ;; (yank)
-	 ;; (forw-char)
-	 )))
+	 ;; (forward-char 1)
+	 (ak-paste-prepending-nl))))
 
      (global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
    #+END_SRC
 ** current items
    #+BEGIN_SRC emacs-lisp
-  (defun ak-org-edit-src ()
-    (interactive)
-    (if (derived-mode-p 'org-mode)
-	(org-edit-special)
-      (org-edit-src-exit)))
+     (defun ak-org-edit-src ()
+       (interactive)
+       (if (derived-mode-p 'org-mode)
+	   (org-edit-special)
+	 (org-edit-src-exit)))
 
-  (defun ak-previous-open-brace ()
-    (interactive)
-    (previous-line)
-    (end-of-line)
-    (evil-previous-open-brace))
+     (defun ak-previous-open-brace ()
+       (interactive)
+       (previous-line)
+       (end-of-line)
+       (evil-previous-open-brace))
 
-  (evil-define-command ak-current-file-name ()
-    "Copy the current buffer-file-name to the clipboard."
-    (let ((filename (if (equal major-mode 'dired-mode)
-			default-directory
-		      (buffer-file-name))))
-      (when filename
-	(setq select-enable-clipboard t)
-	(kill-new filename)
-	(setq select-enable-clipboard nil)
-	(message "'%s' to the clipboard." filename)
-	filename)))
+     (evil-define-command ak-current-file-name ()
+       "Copy the current buffer-file-name to the clipboard."
+       (let ((filename (if (equal major-mode 'dired-mode)
+			   default-directory
+			 (buffer-file-name))))
+	 (when filename
+	   (setq select-enable-clipboard t)
+	   (kill-new filename)
+	   (setq select-enable-clipboard nil)
+	   (message "'%s' to the clipboard." filename)
+	   filename)))
 
-  (evil-define-command ak-current-file-dir ()
-    "Copy the current file-name-directory to the clipboard."
-    (let ((filename (if (equal major-mode 'dired-mode)
-			default-directory
-		      (buffer-file-name))))
-      (when filename
-	(setq select-enable-clipboard t)
-	(kill-new (file-name-directory filename))
-	(setq select-enable-clipboard nil)
-	(message "'%s' to the clipboard." (file-name-directory filename))
-	(file-name-directory filename))))
+     (evil-define-command ak-current-file-dir ()
+       "Copy the current file-name-directory to the clipboard."
+       (let ((filename (if (equal major-mode 'dired-mode)
+			   default-directory
+			 (buffer-file-name))))
+	 (when filename
+	   (setq select-enable-clipboard t)
+	   (kill-new (file-name-directory filename))
+	   (setq select-enable-clipboard nil)
+	   (message "'%s' to the clipboard." (file-name-directory filename))
+	   (file-name-directory filename))))
 
-  (evil-define-command ak-current-mode ()
-    (setq select-enable-clipboard t)
-    (kill-new major-mode)
-    (setq select-enable-clipboard nil)
-    (message "%s" major-mode))
+     (evil-define-command ak-current-mode ()
+       (setq select-enable-clipboard t)
+       (kill-new major-mode)
+       (setq select-enable-clipboard nil)
+       (message "%s" major-mode))
    #+END_SRC
 * keymaps
   #+BEGIN_SRC emacs-lisp
@@ -183,6 +201,9 @@
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       (gdk :states '(motion normal visual operator insert emacs)
+	"C-k" nil ; kill-line restore
+	"C-a" nil
+	"C-e" nil
 	"C-M-b" 'buffer-menu
 	"C-M-S-t" 'mode-line-other-buffer
 	"s-<return>" 'ak-make
@@ -193,7 +214,17 @@
 	"M-<right>" 'forward-word
 	"M-<left>" 'evil-backward-word-begin
 	"s-<right>" 'move-end-of-line
-	"s-<left>" 'back-to-indentation)
+	"s-<left>" 'back-to-indentation
+	"M-s-g" 'ak-generate-makefile
+	"C-M-i" 'evil-jump-item
+	"C-w" 'backward-char
+	"M-s-g" 'ak-generate-makefile
+	"C-M-i" 'evil-jump-item
+	"C-w" 'backward-char
+	"C-M-e" 'er/expand-region
+	"C-M-i" 'evil-jump-item
+	"C-w" 'backward-char
+	"C-M-e" 'er/expand-region)
 
       (gdk :states '(motion normal visual operator)
 	;; basic movement:
@@ -219,7 +250,7 @@
 	")" (gsk "C-o")
 	;;; bug in evil-previous-open-brace : evil-first-non-blank needed
 	"(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-	;; state changing:
+	 ;; state changing:
 	"D" 'evil-visual-char
 	"v" 'evil-visual-char
 	;; delete/change:
@@ -237,7 +268,15 @@
 	"Z" (gsk "D %")
 	"C" (gsk "0 D c s")
 	"R" (gsk "s D r")
-	"G" (gsk "D r s o")
+	"G" (gsk "D r s o s m")
+	"F" (gsk "D s o r"))
+
+      (gdk :states '(visual)
+	"TAB" 'ak-duplicate
+	"Z" (gsk "D %")
+	"C" (gsk "0 D c s")
+	"R" (gsk "s D r")
+	"G" (gsk "c s m")
 	"F" (gsk "D s o r"))
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -272,7 +311,6 @@
       (gdk :keymaps 'latex-mode-map
 	"SPC" 'aking/yas-expand-or-self-insert 
 	"q" 'aking/project-sq))
-
   #+END_SRC
 * leader-map
   #+BEGIN_SRC emacs-lisp
