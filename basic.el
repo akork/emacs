@@ -15,5 +15,5 @@
 (require 'use-package)
 
 (require 'org)
-(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
-
+;(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
+(load "/users/aleksey/dropbox/settings/emacs/min.el")
