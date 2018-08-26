@@ -2,10 +2,10 @@
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda ()
-            (setq-local origami-fold-style 'triple-braces)
-	    (origami-mode 1)
-	    (run-at-time "0.1 sec" nil `(lambda ()
-					  (origami-show-only-node (current-buffer) (point))))))
+                (setq-local origami-fold-style 'triple-braces)
+	        (origami-mode 1)
+	        (run-at-time "0.1 sec" nil `(lambda ()
+					      (origami-show-only-node (current-buffer) (point))))))
 
 ;; }}}
 ;;; look {{{
@@ -30,25 +30,25 @@
 ;; }}}
 ;;; overriding keymap {{{
 (defvar ak-keymap-mode-map (make-sparse-keymap)
-  "Keymap for `ak-kkeymap-mode'.")
+      "Keymap for `ak-kkeymap-mode'.")
 
 	      ;;;###autoload
 (define-minor-mode ak-keymap-mode
-  "A minor mode so that my key settings override annoying major modes."
-  ;; If init-value is not set to t, this mode does not get enabled in
-  ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
-  ;; More info: http://emacs.stackexchange.com/q/16693/115
-  :init-value t
-  :lighter " gmap"
-  :keymap ak-keymap-mode-map)
+      "A minor mode so that my key settings override annoying major modes."
+      ;; If init-value is not set to t, this mode does not get enabled in
+      ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
+      ;; More info: http://emacs.stackexchange.com/q/16693/115
+      :init-value t
+      :lighter " gmap"
+      :keymap ak-keymap-mode-map)
 
 	      ;;;###autoload
 (define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode 
-  (lambda ()
-    (when (not (derived-mode-p
+      (lambda ()
+        (when (not (derived-mode-p
 		'dired-mode 'org-mode))
       (ak-keymap-mode)))
-  )
+      )
 
 ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
 ;; The keymaps in `emulation-mode-map-alists' take precedence over
@@ -67,10 +67,10 @@
 ;;; evil setup {{{
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
-  :config
-  (setq evil-cross-lines nil)
-  ;; (evil-make-overriding-map ak-keymap-mode-map)
-  (evil-mode 1))
+      :config
+      (setq evil-cross-lines nil)
+      ;; (evil-make-overriding-map ak-keymap-mode-map)
+      (evil-mode 1))
 ;; }}}
 ;;; funcs {{{
 (defun ak-half-page-down ()
@@ -97,25 +97,25 @@
   (set-mark-command nil)
   (insert "\n")
   (save-excursion
-    (yank)
-    (indent-region (mark) (point))
-    (deactivate-mark))
+        (yank)
+        (indent-region (mark) (point))
+        (deactivate-mark))
   (indent-for-tab-command))
 
 (defun ak-eval ()
   (interactive)
   (if (use-region-p)
-      (eval-region)
-    (eval-last-sexp (point))))
+              (eval-region)
+        (eval-last-sexp (point))))
 
 (defun ak-indent-buffer ()
   (interactive)
   (save-excursion
-    (save-restriction
-      (mark-whole-buffer)
-      (indent-region (region-beginning) (region-end))
-      ;; (setq transient-mark-mode nil)
-      (keyboard-quit))))
+        (save-restriction
+          (mark-whole-buffer)
+          (indent-region (region-beginning) (region-end))
+          ;; (setq transient-mark-mode nil)
+          (keyboard-quit))))
 
 (defun ak-yank-pop-forwards (arg)
   (interactive "p")
@@ -147,8 +147,8 @@
 (defun ak-org-edit-src ()
   (interactive)
   (if (derived-mode-p 'org-mode)
-      (org-edit-special)
-    (org-edit-src-exit)))
+              (org-edit-special)
+        (org-edit-src-exit)))
 
 (defun ak-previous-open-brace ()
   (interactive)
@@ -157,10 +157,10 @@
   (evil-previous-open-brace))
 
 (evil-define-command ak-current-file-name ()
-  "Copy the current buffer-file-name to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-		      default-directory
-		    (buffer-file-name))))
+      "Copy the current buffer-file-name to the clipboard."
+      (let ((filename (if (equal major-mode 'dired-mode)
+		              default-directory
+		        (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
       (kill-new filename)
@@ -169,10 +169,10 @@
       filename)))
 
 (evil-define-command ak-current-file-dir ()
-  "Copy the current file-name-directory to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-		      default-directory
-		    (buffer-file-name))))
+      "Copy the current file-name-directory to the clipboard."
+      (let ((filename (if (equal major-mode 'dired-mode)
+		              default-directory
+		        (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
       (kill-new (file-name-directory filename))
@@ -181,12 +181,11 @@
       (file-name-directory filename))))
 
 (evil-define-command ak-current-mode ()
-  (setq select-enable-clipboard t)
-  (kill-new major-mode)
-  (setq select-enable-clipboard nil)
-  (message "%s" major-mode))
+      (setq select-enable-clipboard t)
+      (kill-new major-mode)
+      (setq select-enable-clipboard nil)
+      (message "%s" major-mode))
 ;; }}}
-;;; keymaps {{{
 (add-to-list 'load-path "~/.emacs.d/general")
 
 (use-package general
@@ -197,150 +196,21 @@
 
   (defalias 'gkd 'general-key-dispatch)
   (defalias 'gsk 'general-simulate-keys)
+  )
 
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; global
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (gdk :states '(motion normal visual operator insert emacs)
-    "C-k" nil ; kill-line restore
-    "C-a" nil
-    "C-e" nil
-    "C-M-b" 'buffer-menu
-    "C-M-S-t" 'mode-line-other-buffer
-    "s-<return>" 'ak-make
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    "C-w" 'backward-char
-    ;;    :predicate '(not (derived-mode-p 'term-mode))
-    "M-<right>" 'forward-word
-    "M-<left>" 'evil-backward-word-begin
-    "s-<right>" 'move-end-of-line
-    "s-<left>" 'back-to-indentation
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    "C-w" 'backward-char
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    "C-w" 'backward-char
-    "C-M-e" 'er/expand-region
-    "C-M-i" 'evil-jump-item
-    "C-w" 'backward-char
-    "C-M-e" 'er/expand-region)
-
-  (gdk :states '(motion normal visual operator)
-    ;; basic movement:
-    "t" 'evil-forward-char
-    "m" 'evil-backward-char
-    "n" 'evil-forward-word-begin
-    "N" 'evil-forward-WORD-begin
-    "d" 'evil-first-non-blank
-    "C-a" 'evil-first-non-blank
-    "s" 'evil-end-of-line
-    "C-e" 'move-end-of-line
-    "c" 'evil-next-line
-    "r" 'evil-previous-line
-    "f" 'ak-half-page-up
-    "g" 'ak-half-page-down
-    ;; advanced movement:
-    "w" 'evil-ex-search-next
-    "W" 'evil-ex-search-previous
-    "h" (gkd 'evil-search-forward :timeout 0.5
-	     "h" 'ak-org-edit-src)
-    "_" 'evil-find-char
-    "z" 'evil-jump-item
-    ")" (gsk "C-o")
-	;;; bug in evil-previous-open-brace : evil-first-non-blank needed
-    "(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-    ;; state changing:
-    "D" 'evil-visual-char
-    "v" 'evil-visual-char
-    ;; delete/change:
-    "e" 'evil-delete
-    "l" 'evil-change
-    "k" 'evil-delete-char
-    "K" 'evil-delete-backward-char
-    ;; misc:
-    "'" 'evil-join
-    "J" (gsk "a <return>")
-    "C-d" 'ak-duplicate
-    "DEL" 'projectile-find-file
-    "x" nil
-    "x r" 'outline-show-all
-    "x a" 'outline-show-subtree
-    "TAB" 'outline-toggle-children
-    "x m" 'outline-hide-body
-    "x r" 'vimish-fold-unfold-all
-    "x a" 'vimish-fold-unfold
-    "TAB" 'vimish-fold-toggle
-    "x m" 'vimish-fold-refold-all
-    "x a" 'origami-toggle-node
-    "TAB" 'origami-recursively-toggle-node
-    "x r" 'origami-open-all-nodes
-    "x o" 'origami-open-node
-    "x m" 'origami-close-all-nodes)
-
-  (gdk :states '(motion normal)
-    "Z" (gsk "D %")
-    "C" (gsk "0 D c s")
-    "R" (gsk "s D r")
-    "G" (gsk "D r s o s m")
-    "F" (gsk "D s o r"))
-
-  (gdk :states '(visual)
-    "TAB" 'ak-duplicate
-    "Z" (gsk "D %")
-    "C" (gsk "0 D c s")
-    "R" (gsk "s D r")
-    "G" (gsk "c s m")
-    "F" (gsk "D s o r"))
-
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; mode specific
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (gdk :keymaps 'org-mode-map
-    :states '(motion normal visual)
-    "TAB" 'org-cycle
-    "." 'org-cycle
-    "(" 'outline-up-heading)
-
-  (gdk :keymaps 'dired-mode-map
-    :states '(motion normal visual)
-    "c" 'dired-next-line
-    "r" 'dired-previous-line
-    "g" 'dired-next-dirline
-    "f" 'dired-prev-dirline
-    "m" 'dired-mark
-    "d" 'dired-flag-file-deletion
-    "C" 'dired-copy-file
-    "R" 'dired-do-rename
-    "z" 'dired-up-directory)
-
-  ;; (gdk-ov :states '(motion normal visual)
-  ;;   :predicate '(derived-mode-p 'magit-status-mode)
-  ;;   "k" 'magit-commit-popup
-  ;;   "j" 'magit-rebase-popup
-  ;;   "c" 'evil-next-line
-  ;;   "r" 'evil-previous-line)
-
-  (gdk :keymaps 'latex-mode-map
-    "SPC" 'aking/yas-expand-or-self-insert 
-    "q" 'aking/project-sq))
-;; }}}
 ;;; leader-map {{{
 (gdk :states '(emacs motion normal visual)
-  "q"
-  (gkd 'evil-record-macro :timeout 1
+      "q"
+      (gkd 'evil-record-macro :timeout 1
        "a" 'origami-recursively-toggle-node
        "r" 'origami-open-all-nodes
        "o" 'origami-recursively-toggle-node
        "m" 'origami-close-all-nodes))
 
 (gdk :states '(emacs motion normal visual)
-  ;; :keymaps 'doc-view-mode-map
-  "SPC"
-  (gkd 'helm-projectile-switch-project :timeout 1
+      ;; :keymaps 'doc-view-mode-map
+      "SPC"
+      (gkd 'helm-projectile-switch-project :timeout 1
        "r" 'evil-goto-first-line
        "c" 'evil-goto-line
        "e"
@@ -370,14 +240,14 @@
        "i" 'save-reload-init
        "f"
        (gkd  '(lambda () (interactive)
-		;; (aking/view-pdf)
-		(aking/compile-project)
-		)
+		    ;; (aking/view-pdf)
+		    (aking/compile-project)
+		    )
 	 :timeout 0.5
 	 "c" '(lambda () (interactive)
-		(aking/view-pdf)
-		(aking/compile-project)
-		(preview-buffer)))
+		    (aking/view-pdf)
+		    (aking/compile-project)
+		    (preview-buffer)))
        ;; "g" 'helm-projectile-grep
        "g" 'magit-status
        ;; "g" 'preview-buffer
@@ -421,3 +291,147 @@
 	    ;;          "s" 'aking/yas-latex-script))
 	    )))
 ;; }}}
+;;; keymaps {{{
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; global
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(gdk :states '(motion normal visual operator insert emacs)
+  "C-k" nil ; kill-line restore
+  "C-a" nil
+  "C-e" nil
+  "C-z" nil
+  "C-M-b" 'buffer-menu
+  "C-M-S-t" 'mode-line-other-buffer
+  "s-<return>" 'ak-make
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  "C-w" 'backward-char
+  ;;    :predicate '(not (derived-mode-p 'term-mode))
+  "M-<right>" 'forward-word
+  "M-<left>" 'evil-backward-word-begin
+  "s-<right>" 'move-end-of-line
+  "s-<left>" 'back-to-indentation
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  "C-w" 'backward-char
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  "C-w" 'backward-char
+  "C-M-e" 'er/expand-region
+  "C-M-i" 'evil-jump-item
+  "C-w" 'backward-char
+  "C-M-e" 'er/expand-region)
+
+(gdk :states '(motion normal visual operator)
+  ;; basic movement:
+  "t" 'evil-forward-char
+  "m" 'evil-backward-char
+  "n" 'evil-forward-word-begin
+  "N" 'evil-forward-WORD-begin
+  "d" 'evil-first-non-blank
+  "C-a" 'evil-first-non-blank
+  "s" 'evil-end-of-line
+  "C-e" 'move-end-of-line
+  "c" 'evil-next-line
+  "r" 'evil-previous-line
+  "f" 'ak-half-page-up
+  "g" 'ak-half-page-down
+  ;; advanced movement:
+  "w" 'evil-ex-search-next
+  "W" 'evil-ex-search-previous
+  "h" (gkd 'evil-search-forward :timeout 0.5
+	   "h" 'ak-org-edit-src)
+  "_" 'evil-find-char
+  "z" 'evil-jump-item
+  ")" (gsk "C-o")
+	;;; bug in evil-previous-open-brace : evil-first-non-blank needed
+  "(" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
+  ;; state changing:
+  "D" 'evil-visual-char
+  "v" 'evil-visual-char
+  ;; delete/change:
+  "e" 'evil-delete
+  "l" 'evil-change
+  "k" 'evil-delete-char
+  "K" 'evil-delete-backward-char
+  ;; misc:
+  "'" 'evil-join
+  "J" (gsk "a <return>")
+  "C-d" 'ak-duplicate
+  "DEL" 'projectile-find-file
+  "x" nil
+  "x r" 'outline-show-all
+  "x a" 'outline-show-subtree
+  "TAB" 'outline-toggle-children
+  "x m" 'outline-hide-body
+  "x r" 'vimish-fold-unfold-all
+  "x a" 'vimish-fold-unfold
+  "TAB" 'vimish-fold-toggle
+  "x m" 'vimish-fold-refold-all
+  "x a" 'origami-toggle-node
+  "TAB" 'origami-recursively-toggle-node
+  "x r" 'origami-open-all-nodes
+  "x o" 'origami-open-node
+  "x m" 'origami-close-all-nodes)
+
+(gdk :states '(motion normal)
+  "Z" (gsk "D %")
+  "C" (gsk "0 D c s")
+  "R" (gsk "s D r")
+  "G" (gsk "D r s o s m")
+  "F" (gsk "D s o r"))
+
+(gdk :states '(visual)
+  "TAB" 'ak-duplicate
+  "Z" (gsk "D %")
+  "C" (gsk "0 D c s")
+  "R" (gsk "s D r")
+  "G" (gsk "c s m")
+  "F" (gsk "D s o r"))
+
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mode specific
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(gdk :keymaps 'org-mode-map
+  :states '(motion normal visual)
+  "TAB" 'org-cycle
+  "." 'org-cycle
+  "(" 'outline-up-heading)
+
+(add-hook 'dired-mode-hook
+	  (lambda ()
+	    (gdk
+	      :states 'normal
+	      :keymaps 'dired-mode-map
+	      "r" 'dired-previous-line
+	      ;; (evil-define-key '(motion normal visual) 'dired-mode-map
+	      "c" 'dired-next-line
+	      "g" 'dired-next-dirline
+	      "f" 'dired-prev-dirline
+	      "m" 'dired-mark
+	      "d" 'dired-flag-file-deletion
+	      "C" 'dired-copy-file
+	      "R" 'dired-do-rename
+	      "z" 'dired-up-directory)))
+
+ (add-hook 'dired-mode-hook
+	  (lambda ()
+	    (evil-define-key 'normal dired-mode-map "r" 'dired-previous-line)))
+
+;; (evil-global-set-key 'normal "r" 'evil-previous-line)
+
+;; (evil-define-minor-mode-key 'normal 'dired-mode "r" 'dired-previous-line)
+
+;; (gdk-ov :states '(motion normal visual)
+;;   :predicate '(derived-mode-p 'magit-status-mode)
+;;   "k" 'magit-commit-popup
+;;   "j" 'magit-rebase-popup
+;;   "c" 'evil-next-line
+;;   "r" 'evil-previous-line)
+
+;;   (gdk :keymaps 'latex-mode-map
+;;     "SPC" 'aking/yas-expand-or-self-insert 
+;;     "q" 'aking/project-sq)
+;; ;; }}}
