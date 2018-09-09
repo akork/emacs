@@ -1,6 +1,6 @@
+.gitignore
 *~
 \#*
 .#*
 *.swp
 *.swo
-basic-org.el

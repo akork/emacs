@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ;;; help {{{
 
 ;; (string= evil-state "normal")
@@ -31,18 +32,27 @@
 (ignore-errors
     (abra cadabra))
 
-(add-hook 'emacs-lisp-mode-hook
-          (lambda ()
-                    (setq-local origami-fold-style 'triple-braces)
-	            (origami-mode 1)
-	            (run-at-time "0.1 sec" nil `(lambda ()
-					          (origami-show-only-node (current-buffer) (point))))))
+(defun ak-origami-triple-braces ()
+  (interactive)
+  (setq-local origami-fold-style 'triple-braces)
+  (origami-mode 1)
+  (run-at-time "0.1 sec" nil `(lambda ()
+				(origami-show-only-node (current-buffer) (point)))))
+
+(add-hook 'emacs-lisp-mode-hook 'ak-origami-triple-braces)
+(add-hook 'sh-mode-hook 'ak-origami-triple-braces)
+(add-hook 'find-file-hook 'ak-origami-triple-braces)
+
 
 ;; }}}
 ;;; look {{{
 
-(load-theme 'dracula t)
 (menu-bar-mode -1)
+(tool-bar-mode -1)
+(toggle-scroll-bar -1)
+(setq frame-resize-pixelwise t)
+
+(load-theme 'dracula t)
 
 (global-hl-line-mode 1)
 (set-face-attribute hl-line-face nil
@@ -59,6 +69,7 @@
 ;; }}}
 ;;; feel {{{
 
+(global-auto-revert-mode t)
 (setq visible-bell 1)
 (setq scroll-margin 8)
 (setq scroll-conservatively 10000)
@@ -108,18 +119,28 @@
 (add-hook 'dired-mode-hook #'turn-off-my-mode)
 ;; }}}
 ;;; evil setup {{{
+
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
           :config
-          (setq evil-cross-lines nil)
-          ;; (evil-make-overriding-map ak-keymap-mode-map)
-          (evil-mode 1))
-;; }}}
+          (setq evil-cross-lines t)
+          (evil-mode 1)
+	  (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
+	  (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
+	  (eval-after-load "ibuffer" '(evil-make-overriding-map ibuffer-mode-map))
+	  (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
+	  (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
+	  (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map)))
+
+;;; }}}
+;;; hooks {{{
+
+;;; }}}
 ;;; funcs {{{
 
-(defun ak-time ()
+(defun ak-find-file (file)
   (interactive)
-  (message (current-time-string)))
+  (lambda () (interactive) (find-file (expand-file-name file))))
 
 (defun ak-half-page-down ()
   (interactive)
@@ -179,6 +200,7 @@
   (insert "\n")
   (save-excursion
     (yank)
+    ;; (evil-paste-before 1)
     (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
@@ -265,14 +287,18 @@
        "m" 'origami-close-all-nodes))
 
 (gdk :states '(emacs motion normal visual)
-          ;; :keymaps 'doc-view-mode-map
-          "SPC"
-          (gkd 'helm-projectile-switch-project :timeout 1
+  ;; :keymaps 'doc-view-mode-map
+  "SPC"
+  (gkd 'helm-projectile-switch-project :timeout 1
+       "k" (ak-find-file "~/.config/karabiner/karabiner.json")
+       "v" (ak-find-file "~/yd/cfg/vim/min.vim")
+       "e" (ak-find-file "~/yd/cfg/emacs/min.el")
+       "i" (ak-find-file "~/.ideavimrc")
        "r" 'evil-goto-first-line
        "c" 'evil-goto-line
-       "e"
-       (gkd 'ak-eval :timeout 0.5
-	    "e" 'eval-buffer)
+       ;; "e"
+       ;; (gkd 'ak-eval :timeout 0.5
+       ;; 	    "e" 'eval-buffer)
        "u" 'undo-tree-redo
        "m" 'aking/latex-convert-to-big
        "p"
@@ -287,30 +313,27 @@
 	    "d"
 	    (gkd 'edit-config :timeout 0.5
 		 "d" 'spacemacs/find-dotfile))
-
-       "k" 'aking/conf-karabiner
-
        "s"
        (gkd 'aking/save :timeout 0.5
 	    "a" 'aking/save-all
 	    "/" 'evil-save-and-quit)
-       "i" 'save-reload-init
+       ;; "i" 'save-reload-init
        "f"
        (gkd  '(lambda () (interactive)
-		        ;; (aking/view-pdf)
-		        (aking/compile-project)
-		        )
+		;; (aking/view-pdf)
+		(aking/compile-project)
+		)
 	 :timeout 0.5
 	 "c" '(lambda () (interactive)
-		        (aking/view-pdf)
-		        (aking/compile-project)
-		        (preview-buffer)))
+		(aking/view-pdf)
+		(aking/compile-project)
+		(preview-buffer)))
        ;; "g" 'helm-projectile-grep
        "g" 'magit-status
        ;; "g" 'preview-buffer
        ;; "w" 'aking/test
        "w" 'ak/view-pdf
-       "v" 'aking/view-pdf
+       ;;"v" 'aking/view-pdf
        "b" 'aking/latex-build
        "h" 'avy-goto-word-1
        "n" 'avy-goto-line
@@ -347,6 +370,7 @@
 	    ;; "t" (gkd 'aking/yas-latex :timeout 0.5
 	    ;;          "s" 'aking/yas-latex-script))
 	    )))
+
 ;; }}}
 ;;; keymaps {{{
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -354,102 +378,101 @@
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (gdk :states '(motion normal visual operator insert emacs)
-      "C-k" nil ; kill-line restore
-      "C-a" nil
-      "C-e" nil
-      "C-z" nil
-      "C-y" nil
-      "C-w" nil
-      "C-d" 'ak-duplicate-after
-      "C-M-b" 'buffer-menu
-      "C-M-S-t" 'mode-line-other-buffer
-      "s-<return>" 'ak-make
-      "M-s-g" 'ak-generate-makefile
-      "C-M-i" 'evil-jump-item
-      ;;    :predicate '(not (derived-mode-p 'term-mode))
-      "M-<right>" 'forward-word
-      "M-<left>" 'evil-backward-word-begin
-      "s-<right>" 'move-end-of-line
-      "s-<left>" 'back-to-indentation
-      "M-s-g" 'ak-generate-makefile
-      "C-M-i" 'evil-jump-item
-      "M-s-g" 'ak-generate-makefile
-      "C-M-i" 'evil-jump-item
-      "C-M-e" 'er/expand-region)
+        "C-k" nil ; kill-line restore
+        "C-a" nil
+        "C-e" nil
+        "C-z" nil
+        "C-y" nil
+        "C-w" nil
+        "C-d" 'ak-duplicate-after
+        "C-M-b" 'buffer-menu
+        "C-M-S-t" 'mode-line-other-buffer
+        "s-<return>" 'ak-make
+        "M-s-g" 'ak-generate-makefile
+        "C-M-i" 'evil-jump-item
+        ;;    :predicate '(not (derived-mode-p 'term-mode))
+        "M-<right>" 'forward-word
+        "M-<left>" 'evil-backward-word-begin
+        "s-<right>" 'move-end-of-line
+        "s-<left>" 'back-to-indentation
+        "M-s-g" 'ak-generate-makefile
+        "C-M-i" 'evil-jump-item
+        "M-s-g" 'ak-generate-makefile
+        "C-M-i" 'evil-jump-item
+        "C-M-e" 'er/expand-region)
 
 
 (gdk :states '(motion normal visual operator)
-      ;; basic movement:
-      "t" 'evil-forward-char
-      "m" 'evil-backward-char
-      "n" 'evil-forward-word-begin
-      "N" 'evil-forward-WORD-begin
-      "d" 'evil-first-non-blank
-      "C-a" 'evil-first-non-blank
-      "s" 'evil-end-of-line
-      "C-e" 'move-end-of-line
-      "c" 'evil-next-line
-      "r" 'evil-previous-line
-      "f" 'ak-half-page-up
-      "g" 'ak-half-page-down
-      ;; advanced movement:
-      "H" 'ak-select-from-lb
-      "j" 'evil-forward-WORD-begin
-      "w" 'evil-ex-search-next
-      "W" 'evil-ex-search-previous
-      "h" (gkd 'evil-search-forward :timeout 0.5
+        ;; basic movement:
+        "t" 'evil-forward-char
+        "m" 'evil-backward-char
+        "n" 'evil-forward-word-begin
+        "N" 'evil-forward-WORD-begin
+        "d" 'evil-first-non-blank
+        "C-a" 'evil-first-non-blank
+        "s" 'evil-end-of-line
+        "C-e" 'move-end-of-line
+        "c" 'evil-next-line
+        "r" 'evil-previous-line
+        "f" 'ak-half-page-up
+        "g" 'ak-half-page-down
+        ;; advanced movement:
+        "H" 'ak-select-from-lb
+        "H" 'evil-visual-line
+        "j" 'evil-forward-WORD-begin
+        "w" 'evil-ex-search-next
+        "W" 'evil-ex-search-previous
+        "h" (gkd 'evil-search-forward :timeout 0.5
 	   "h" 'ak-org-edit-src)
-      "_" 'evil-find-char
-      "z" 'evil-jump-item
-      "}" (gsk "C-o")
+        "_" 'evil-find-char
+        "z" 'evil-jump-item
+        "}" (gsk "C-o")
 	;;; bug in evil-previous-open-brace : evil-first-non-blank needed
-      "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-      "(" 'forward-paragraph
-      ")" 'backward-paragraph
-      ;; paste
-      "w" 'ak-paste-after-prepending-nl
-      ;; state changing:
-      "D" 'evil-visual-char
-      "v" 'evil-visual-char
-      ;; delete/change:
-      "e" 'evil-delete
-      "l" 'evil-change
-      "k" 'evil-delete-char
-      "K" 'evil-delete-backward-char
-      ;; misc:
-      "'" 'evil-join
-      "J" (gsk "a <return>")
-      "C-d" 'ak-duplicate
-      "DEL" 'projectile-find-file
-      "x" nil
-      "x r" 'outline-show-all
-      "x a" 'outline-show-subtree
-      "TAB" 'outline-toggle-children
-      "x m" 'outline-hide-body
-      "x r" 'vimish-fold-unfold-all
-      "x a" 'vimish-fold-unfold
-      "TAB" 'vimish-fold-toggle
-      "x m" 'vimish-fold-refold-all
-      "x a" 'origami-toggle-node
-      "TAB" 'origami-recursively-toggle-node
-      "x r" 'origami-open-all-nodes
-      "x o" 'origami-open-node
-      "x m" 'origami-close-all-nodes)
+        "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
+        "(" 'forward-paragraph
+        ")" 'backward-paragraph
+        ;; paste
+        "w" 'ak-paste-after-prepending-nl
+        ;; state changing:
+        "D" 'evil-visual-char
+        "v" 'evil-visual-char
+        ;; delete/change:
+        "e" 'evil-delete
+        "l" 'evil-change
+        "k" 'evil-delete-char
+        "K" 'evil-delete-backward-char
+        ;; misc:
+        "'" 'evil-join
+        "J" (gsk "a <return>")
+        "DEL" 'projectile-find-file
+        "x" nil
+        "x r" 'outline-show-all
+        "x a" 'outline-show-subtree
+        "TAB" 'outline-toggle-children
+        "x m" 'outline-hide-body
+        "x r" 'vimish-fold-unfold-all
+        "x a" 'vimish-fold-unfold
+        "TAB" 'vimish-fold-toggle
+        "x m" 'vimish-fold-refold-all
+        "x a" 'origami-toggle-node
+        "TAB" 'origami-recursively-toggle-node
+        "x r" 'origami-open-all-nodes
+        "x o" 'origami-open-node
+        "x m" 'origami-close-all-nodes)
 
 (gdk :states '(motion normal)
-      "Z" (gsk "D %")
-      "C" (gsk "0 D c s")
-      "R" (gsk "s D r")
-      "G" (gsk "D r s o s m")
-      "F" (gsk "D s o r"))
+        "Z" (gsk "D %")
+        "G" (gsk "0 D c s")
+        "C" (gsk "D r s o s m")
+        "F" (gsk "D s o r"))
 
 (gdk :states '(visual)
-      "TAB" 'ak-duplicate
-      "Z" (gsk "D %")
-      "C" (gsk "0 D c s")
-      "R" (gsk "s D r")
-      "G" (gsk "c s m")
-      "F" (gsk "D s o r"))
+        "TAB" 'ak-duplicate
+        "Z" (gsk "D %")
+        "C" (gsk "0 D c s")
+        "R" (gsk "s D r")
+        "G" (gsk "c s m")
+        "F" (gsk "D s o r"))
 
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -457,30 +480,31 @@
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (gdk :keymaps 'org-mode-map
-      :states '(motion normal visual)
-      "TAB" 'org-cycle
-      "." 'org-cycle
-      "(" 'outline-up-heading)
+  :states '(motion normal visual)
+  "TAB" 'org-cycle
+  "." 'org-cycle
+  "(" 'outline-up-heading)
 
 (add-hook 'dired-mode-hook
 	  (lambda ()
-	        (gdk
-	          :states 'normal
-	          :keymaps 'dired-mode-map
-	          "r" 'dired-previous-line
-	          ;; (evil-define-key '(motion normal visual) 'dired-mode-map
-	          "c" 'dired-next-line
-	          "g" 'dired-next-dirline
-	          "f" 'dired-prev-dirline
-	          "m" 'dired-mark
-	          "d" 'dired-flag-file-deletion
-	          "C" 'dired-copy-file
-	          "R" 'dired-do-rename
-	          "z" 'dired-up-directory)))
+	    (gdk
+	      :states 'normal
+	      :keymaps 'dired-mode-map
+	      "r" 'dired-previous-line
+	      ;; (evil-define-key '(motion normal visual) 'dired-mode-map
+		    "c" 'dired-next-line
+		    "g" 'dired-next-dirline
+	            "f" 'dired-prev-dirline
+	            "m" 'dired-mark
+	            "d" 'dired-flag-file-deletion
+	            "C" 'dired-copy-file
+	            "R" 'dired-do-rename
+	            "z" 'dired-up-directory)))
 
  (add-hook 'dired-mode-hook
 	  (lambda ()
-	        (evil-define-key 'normal dired-mode-map "r" 'dired-previous-line)))
+	    (evil-define-key
+	      'normal dired-mode-map "r" 'dired-previous-line)))
 
 ;; (evil-global-set-key 'normal "r" 'evil-previous-line)
 
