@@ -52,7 +52,17 @@
 (toggle-scroll-bar -1)
 (setq frame-resize-pixelwise t)
 
+(set-face-attribute 'default (selected-frame) :height 122)
+
 (load-theme 'dracula t)
+
+(add-hook 'minibuffer-setup-hook
+          (lambda ()
+            (make-local-variable 'face-remapping-alist)
+            (add-to-list 'face-remapping-alist '(default (:background "#f00")))))
+
+(set-face-attribute 'minibuffer-prompt nil
+		    :foreground "#0f0")
 
 (global-hl-line-mode 1)
 (set-face-attribute hl-line-face nil
@@ -62,6 +72,93 @@
 (set-face-attribute 'show-paren-match nil
 		    :background "#a0f"
 		    :box '(:color "deep pink" :line-width 2))
+
+;;; }}}
+;;; projectile {{{
+
+;; (setq projectile-main-project nil)
+
+(defun set-main-project (&optional dir)
+  (setq projectile-main-project nil)
+  "Set the projectile main project based on the current buffer.
+   When called with argument DIR, make that main project instead."
+  (interactive)
+  (if dir
+      (setq projectile-main-project dir)
+    (let ((current-project))
+      (let ((projectile-main-project nil))
+        (setq current-project (projectile-project-root)))
+      (setq projectile-main-project current-project))))
+
+(defun ak-set-project-to-switch-as-main (project-to-switch &optional arg)
+  (set-main-project project-to-switch))
+
+(defun use-main-project (oldfun &rest args)
+  "Skip calling `projectile-project-root' when there is a main project defined."
+  (if (and (boundp 'projectile-main-project)
+	   projectile-main-project)
+      projectile-main-project
+    (funcall oldfun)))
+
+;; (defun set-main-pro (project-to-switch &optional arg))
+(advice-add #'projectile-project-root :around #'use-main-project)
+
+(advice-add #'projectile-switch-project-by-name
+	    :before #'ak-set-project-to-switch-as-main)
+
+(setq projectile-generic-command "find -L . -type f -print0")
+
+;;; }}}
+;;; frame title {{{
+
+(defvar ak-project-name "project A")
+
+(defun ak-set-title ()
+  (concat
+   ;; (abbreviate-file-name (buffer-file-name))
+   (buffer-name)
+   "  "
+   (format-time-string "%T")))
+
+  ;; (let ((name
+  ;;        (if buffer-file-name
+  ;;            (buffer-file-name)
+  ;;          (buffer-name))))
+  ;;   (concat ak-project-name " : " name)))
+
+(setq frame-title-format
+	'(:eval (ak-set-title)))
+
+;; (defun ak-set-frame-title ()
+;;   (interactive)
+;;   (setq frame-title-format
+;; 	'(:eval (ak-set-title))))
+;; 	  ;; (concat
+	  ;;  (abbreviate-file-name (buffer-file-name))
+	  ;;  " ; "
+	  ;;  (current-time-string))))
+
+(setq interval 1)
+
+(defun run-every-ten-seconds ()
+  (interactive)
+  ;; (ak-set-frame-title)
+  (set-frame-parameter nil 'title "dummy")
+  (set-frame-parameter nil 'title nil)
+  ;; (message (current-time-string))
+  )
+
+(defun start-timer ()
+  (interactive)
+  (setq timer
+        (run-at-time (current-time)  interval
+                     'run-every-ten-seconds)))
+
+(start-timer)
+
+;; (run-at-time
+;;  (time-add (current-time) (seconds-to-time interval))
+;;  interval 'run-every-ten-seconds)
 
 ;; (setq display-line-numbers-type 'relative)
 ;; (global-display-line-numbers-mode)
@@ -84,25 +181,25 @@
 ;; }}}
 ;;; overriding keymap {{{c
 (defvar ak-keymap-mode-map (make-sparse-keymap)
-          "Keymap for `ak-kkeymap-mode'.")
+            "Keymap for `ak-kkeymap-mode'.")
 
 	      ;;;###autoload
 (define-minor-mode ak-keymap-mode
-          "A minor mode so that my key settings override annoying major modes."
-          ;; If init-value is not set to t, this mode does not get enabled in
-          ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
-          ;; More info: http://emacs.stackexchange.com/q/16693/115
-          :init-value t
-          :lighter " gmap"
-          :keymap ak-keymap-mode-map)
+            "A minor mode so that my key settings override annoying major modes."
+            ;; If init-value is not set to t, this mode does not get enabled in
+            ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
+            ;; More info: http://emacs.stackexchange.com/q/16693/115
+            :init-value t
+            :lighter " gmap"
+            :keymap ak-keymap-mode-map)
 
 	      ;;;###autoload
 (define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode 
-          (lambda ()
-            (when (not (derived-mode-p
+            (lambda ()
+              (when (not (derived-mode-p
 		'dired-mode 'org-mode))
       (ak-keymap-mode)))
-          )
+            )
 
 ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
 ;; The keymaps in `emulation-mode-map-alists' take precedence over
@@ -117,20 +214,22 @@
   (ak-keymap-mode -1))
 
 (add-hook 'dired-mode-hook #'turn-off-my-mode)
+
 ;; }}}
 ;;; evil setup {{{
 
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
-          :config
-          (setq evil-cross-lines t)
-          (evil-mode 1)
-	  (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
-	  (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
-	  (eval-after-load "ibuffer" '(evil-make-overriding-map ibuffer-mode-map))
-	  (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
-	  (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
-	  (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map)))
+            :config
+            (setq evil-cross-lines t)
+            (evil-mode 1)
+	    (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
+	    (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
+	    (eval-after-load "ibuffer" '(evil-make-overriding-map ibuffer-mode-map))
+	    (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
+	    (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
+	    (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map))
+	    (eval-after-load "package" '(evil-make-overriding-map package-menu-mode-map)))
 
 ;;; }}}
 ;;; hooks {{{
@@ -156,17 +255,17 @@
 (defun ak-eval ()
   (interactive)
   (if (use-region-p)
-      (eval-region)
-    (eval-last-sexp (point))))
+          (eval-region)
+      (eval-last-sexp (point))))
 
 (defun ak-indent-buffer ()
   (interactive)
   (save-excursion
-    (save-restriction
-      (mark-whole-buffer)
-      (indent-region (region-beginning) (region-end))
-      ;; (setq transient-mark-mode nil)
-      (keyboard-quit))))
+      (save-restriction
+        (mark-whole-buffer)
+        (indent-region (region-beginning) (region-end))
+        ;; (setq transient-mark-mode nil)
+        (keyboard-quit))))
 
 (defun ak-yank-pop-forwards (arg)
   (interactive "p")
@@ -175,23 +274,23 @@
 (defun ak-duplicate ()
   (interactive)
   (if (region-active-p)
-      (progn
-	(kill-ring-save (region-beginning) (region-end))
-	(ak-paste-prepending-nl))
+          (progn
+	  (kill-ring-save (region-beginning) (region-end))
+	  (ak-paste-prepending-nl))
     (progn
-      (move-beginning-of-line 1)
-      (kill-line)
-      (yank)
-      (open-line 1)
-      (next-line 1)
-      (yank))))
+        (move-beginning-of-line 1)
+        (kill-line)
+        (yank)
+        (open-line 1)
+        (next-line 1)
+        (yank))))
 
 (defun ak-select-from-lb ()
   (interactive)
   (set-mark (line-beginning-position))
   (let ((le (if (eq (line-beginning-position) (line-end-position))
-		(line-end-position)
-	      (- (line-end-position) 1))))
+		    (line-end-position)
+	        (- (line-end-position) 1))))
     (goto-char le)))
 
 (defun ak-paste-after-prepending-nl ()
@@ -199,9 +298,9 @@
   (forward-char 1)
   (insert "\n")
   (save-excursion
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
+      (yank)
+      ;; (evil-paste-before 1)
+      (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-duplicate-region-after ()
@@ -213,19 +312,19 @@
 (defun ak-duplicate-after ()
   (interactive)
   (if (region-active-p)
-      (ak-duplicate-region-after)
-    (progn
-      (set-mark (line-beginning-position))
-      (forward-char 1)
-      (ak-duplicate-region-after))))
+          (ak-duplicate-region-after)
+      (progn
+        (set-mark (line-beginning-position))
+        (forward-char 1)
+        (ak-duplicate-region-after))))
 
 (global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
 (defun ak-org-edit-src ()
   (interactive)
   (if (derived-mode-p 'org-mode)
-      (org-edit-special)
-    (org-edit-src-exit)))
+          (org-edit-special)
+      (org-edit-src-exit)))
 
 (defun ak-previous-open-brace ()
   (interactive)
@@ -234,10 +333,10 @@
   (evil-previous-open-brace))
 
 (evil-define-command ak-current-file-name ()
-  "Copy the current buffer-file-name to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-		      default-directory
-		    (buffer-file-name))))
+    "Copy the current buffer-file-name to the clipboard."
+    (let ((filename (if (equal major-mode 'dired-mode)
+		          default-directory
+		      (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
       (kill-new filename)
@@ -246,10 +345,10 @@
       filename)))
 
 (evil-define-command ak-current-file-dir ()
-  "Copy the current file-name-directory to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-		      default-directory
-		    (buffer-file-name))))
+    "Copy the current file-name-directory to the clipboard."
+    (let ((filename (if (equal major-mode 'dired-mode)
+		          default-directory
+		      (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
       (kill-new (file-name-directory filename))
@@ -258,23 +357,23 @@
       (file-name-directory filename))))
 
 (evil-define-command ak-current-mode ()
-  (setq select-enable-clipboard t)
-  (kill-new major-mode)
-  (setq select-enable-clipboard nil)
-  (message "%s" major-mode))
+    (setq select-enable-clipboard t)
+    (kill-new major-mode)
+    (setq select-enable-clipboard nil)
+    (message "%s" major-mode))
 ;; }}}
 ;;; general config {{{
 
 (add-to-list 'load-path "~/.emacs.d/general")
 
 (use-package general
-      :config
-      (general-evil-setup t)
-      (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
-      (general-create-definer gdk)
+        :config
+        (general-evil-setup t)
+        (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
+        (general-create-definer gdk)
 
-      (defalias 'gkd 'general-key-dispatch)
-      (defalias 'gsk 'general-simulate-keys))
+        (defalias 'gkd 'general-key-dispatch)
+        (defalias 'gsk 'general-simulate-keys))
 
 ;;; }}}
 ;;; leader-map {{{
