@@ -1,5 +1,8 @@
 ;;; -*- lexical-binding: t -*-
 (setq enable-recursive-minibuffers t)
+
+(setq ak-home "/Users/AK/")
+
 ;;; help {{{
 
 ;; (string= evil-state "normal")
@@ -30,9 +33,6 @@
 
 ;;; }}}
 ;;; folding {{{
-
-(ignore-errors
-        (abra cadabra))
 
 (defun ak-origami-triple-braces ()
   (interactive)
@@ -266,9 +266,9 @@
 (advice-add #'other-window
 	    :after (lambda (a &optional b) (interactive "p") (ignore-errors (abort-recursive-edit))))
 
-(defun ak-find-file (file)
+(defun ak-find-file-home (file)
   (interactive)
-  (lambda () (interactive) (find-file (expand-file-name file))))
+  (lambda () (interactive) (find-file (expand-file-name (concat ak-home file)))))
 
 (defun ak-half-page-down ()
   (interactive)
@@ -448,13 +448,14 @@
       ;; :keymaps 'doc-view-mode-map
       "SPC"
       (gkd 'helm-projectile-switch-project :timeout 1
-       "k" (ak-find-file "~/.config/karabiner/karabiner.json")
-       "v" (ak-find-file "~/yd/cfg/vim/min.vim")
-       "e" (ak-find-file "~/yd/cfg/emacs/min.el")
-       "i" (ak-find-file "~/.ideavimrc")
-       "q" (ak-find-file "~/yd/cfg/qmk_firmware/ak-first-keymap.c")
-       "s" (ak-find-file "~/yd/cfg/sh/sh.sh")
-       "t" (ak-find-file "~/Library/Application Support/transmission-daemon/settings.json")
+       "i" (ak-find-file-home ".ideavimrc")
+       "q" (ak-find-file-home ".qutebrowser/config.py")
+       "k" (ak-find-file-home ".config/karabiner/karabiner.json")
+       "t" (ak-find-file-home "Library/Application Support/transmission-daemon/settings.json")
+       "v" (ak-find-file-home "yd/cfg/vim/min.vim")
+       "e" (ak-find-file-home "yd/cfg/emacs/min.el")
+       "m" (ak-find-file-home "yd/cfg/qmk_firmware/ak-first-keymap.c")
+       "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
 
        "r" 'evil-goto-first-line
        "c" 'evil-goto-line
@@ -462,7 +463,7 @@
        ;; (gkd 'ak-eval :timeout 0.5
        ;; 	    "e" 'eval-buffer)
        "u" 'undo-tree-redo
-       "m" 'aking/latex-convert-to-big
+       ;;"m" 'aking/latex-convert-to-big
        "p"
        (gkd 'ak-current-file-name :timeout 0.5
 	    "p" 'ak-current-file-dir
@@ -538,6 +539,10 @@
   "C-z" nil
   "C-y" nil
   "C-w" nil
+
+  "C-c C-y" 'ak-paste-after-prepending-nl
+  "C-M-y" 'ak-paste-after-prepending-2nl
+  "C-x ;" 'comment-line
   "C-^" (gsk "C-x C-c !")
   "S-<f10>" 'recompile
   "C-f" 'projectile-find-file
