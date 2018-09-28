@@ -1,14 +1,8 @@
 ;;; -*- lexical-binding: t -*-
-;;; -*- enable-recursive-minibuffers: t -*-
-
-(setq ak-home "/Users/AK/")
-;; (setq enable-recursive-minibuffers t)
-
 ;;; help {{{
 
 ;; (string= evil-state "normal")
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue  
-;; S - shift, s - super
 
 ;;; }}}
 ;;; package.el {{{
@@ -35,6 +29,9 @@
 ;;; }}}
 ;;; folding {{{
 
+(ignore-errors
+        (abra cadabra))
+
 (defun ak-origami-triple-braces ()
   (interactive)
   (setq-local origami-fold-style 'triple-braces)
@@ -42,34 +39,10 @@
   (run-at-time "0.1 sec" nil `(lambda ()
 				    (origami-show-only-node (current-buffer) (point)))))
 
-(defun ak-set-foldmarker (fmr)
-  "Set Vim-type foldmarkers for the current buffer"
-  (interactive "sSet local Vim foldmarker: ")
-  (if (equal fmr "")
-      (message "Abort")
-    (setq fmr (regexp-quote fmr))
-    (set (make-local-variable 'outline-regexp)
-         (concat ".*" fmr "\\([0-9]+\\)?"))
-    (set (make-local-variable 'outline-level)
-         `(lambda ()
-            (save-excursion
-              (re-search-forward
-               ,(concat fmr "\\([0-9]+\\)") nil t)
-              (if (match-string 1)
-                  (string-to-number (match-string 1))
-                (string-to-number "0")))))))
+(add-hook 'emacs-lisp-mode-hook 'ak-origami-triple-braces)
+(add-hook 'sh-mode-hook 'ak-origami-triple-braces)
+(add-hook 'find-file-hook 'ak-origami-triple-braces)
 
-(defun ak-set-vim-foldmarker-and-hide-except ()
-  (interactive)
-  (ak-set-foldmarker (concat "{{" "{"))
-  (run-at-time "0.1 sec" nil
-	       `(lambda ()
-		  (outline-hide-body)
-		  (outline-toggle-children))))
-
-(add-hook 'emacs-lisp-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
-(add-hook 'sh-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
-(add-hook 'find-file-hook 'ak-set-vim-foldmarker-and-hide-except)
 
 ;; }}}
 ;;; look {{{
@@ -79,17 +52,16 @@
 (toggle-scroll-bar -1)
 (setq frame-resize-pixelwise t)
 
-(load-theme 'dracula t)
-
 (set-face-attribute 'default (selected-frame) :height 122)
 (set-face-attribute 'default nil :background "#000")
-(set-face-attribute 'fringe nil :background "#000")
-(set-face-attribute 'font-lock-comment-face nil :foreground "#f00")
+
+(load-theme 'dracula t)
 
 (add-hook 'minibuffer-setup-hook
           (lambda ()
                 (make-local-variable 'face-remapping-alist)
-	        (add-to-list 'face-remapping-alist '(default (:background "#f00")))))
+	        (add-to-list 'face-remapping-alist '(default (
+							    :background "#f00")))))
 
 (eval-after-load "ido"
 '(set-face-attribute 'ido-first-match nil
@@ -264,7 +236,7 @@
 (add-to-list 'load-path "~/.emacs.d/evil")
 (use-package evil
                 :config
-                (setq evil-cross-lines nil)
+                (setq evil-cross-lines t)
                 (evil-mode 1)
 	        (eval-after-load "ibuf-ext" '(evil-make-overriding-map ibuffer-mode-map))
 	        (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
@@ -289,12 +261,9 @@
   (interactive)
   (funcall (intern "ak-time")))
 
-(advice-add #'other-window
-	    :after (lambda (a &optional b) (interactive "p") (ignore-errors (abort-recursive-edit))))
-
-(defun ak-find-file-home (file)
+(defun ak-find-file (file)
   (interactive)
-  (lambda () (interactive) (find-file (expand-file-name (concat ak-home file)))))
+  (lambda () (interactive) (find-file (expand-file-name file))))
 
 (defun ak-half-page-down ()
   (interactive)
@@ -348,56 +317,19 @@
 	            (- (line-end-position) 1))))
     (goto-char le)))
 
-(defun ak-newline ()
-  (interactive)
-  (if (and (boundp 'evil-state)
-	   (eq evil-state 'normal)
-	   (not (= (line-beginning-position) (point))))
-      (forward-char 1))
-  (newline))
-
-(defun ak-yank ()
-  (interactive)
-  (kill-ring-save (region-beginning) (region-end)))
-
-(defun ak-paste-before-appending-nl ()
-  (interactive)
-  ;; (backward-char 1)
-  (insert "\n")
-  (save-excursion
-    (backward-char 1)
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
-  (back-to-indentation))
-
-(defun ak-paste-before-appending-2nl ()
-  (interactive)
-  (insert "\n\n")
-  (save-excursion
-    (backward-char 2)
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
-  (back-to-indentation))
-
 (defun ak-paste-after-prepending-nl ()
   (interactive)
-  (if (and (boundp 'evil-state)
-	   (eq evil-state 'normal))
-      (forward-char 1))
+  (forward-char 1)
   (insert "\n")
   (save-excursion
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
+          (yank)
+          ;; (evil-paste-before 1)
+          (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-paste-after-prepending-2nl ()
   (interactive)
-  (if (and (boundp 'evil-state)
-	   (eq evil-state 'normal))
-      (forward-char 1))
+  (forward-char 1)
   (insert "\n\n")
   (save-excursion
     (yank)
@@ -414,21 +346,19 @@
 (defun ak-duplicate-after ()
   (interactive)
   (if (region-active-p)
-      (ak-duplicate-region-after)
-    (progn
-      (set-mark (line-beginning-position))
-      (if (and (boundp 'evil-state)
-	       (eq evil-state 'normal))
-	  (forward-char 1)))
-    (ak-duplicate-region-after)))
+                  (ak-duplicate-region-after)
+          (progn
+            (set-mark (line-beginning-position))
+            (forward-char 1)
+            (ak-duplicate-region-after))))
 
 (global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
 (defun ak-org-edit-src ()
   (interactive)
   (if (derived-mode-p 'org-mode)
-      (org-edit-special)
-    (org-edit-src-exit)))
+                  (org-edit-special)
+          (org-edit-src-exit)))
 
 (defun ak-previous-open-brace ()
   (interactive)
@@ -460,9 +390,12 @@
       (message "'%s' to the clipboard." (file-name-directory filename))
       (file-name-directory filename))))
 
-(evil-define-operator ak-evil-erase (beg end type register yank-handler)
-  (interactive "<R><x><y>")
-  (evil-delete beg end type ?_ yank-handler))
+(evil-define-command ak-current-mode ()
+        (setq select-enable-clipboard t)
+        (kill-new major-mode)
+        (setq select-enable-clipboard nil)
+        (message "%s" major-mode))
+
 
 ;; }}}
 ;;; general config {{{
@@ -492,14 +425,10 @@
       ;; :keymaps 'doc-view-mode-map
       "SPC"
       (gkd 'helm-projectile-switch-project :timeout 1
-       "i" (ak-find-file-home ".ideavimrc")
-       "q" (ak-find-file-home ".qutebrowser/config.py")
-       "k" (ak-find-file-home ".config/karabiner/karabiner.json")
-       "t" (ak-find-file-home "Library/Application Support/transmission-daemon/settings.json")
-       "v" (ak-find-file-home "yd/cfg/vim/min.vim")
-       "e" (ak-find-file-home "yd/cfg/emacs/min.el")
-       "m" (ak-find-file-home "yd/cfg/qmk_firmware/ak-first-keymap.c")
-       "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
+       "k" (ak-find-file "~/.config/karabiner/karabiner.json")
+       "v" (ak-find-file "~/yd/cfg/vim/min.vim")
+       "e" (ak-find-file "~/yd/cfg/emacs/min.el")
+       "i" (ak-find-file "~/.ideavimrc")
 
        "r" 'evil-goto-first-line
        "c" 'evil-goto-line
@@ -507,7 +436,7 @@
        ;; (gkd 'ak-eval :timeout 0.5
        ;; 	    "e" 'eval-buffer)
        "u" 'undo-tree-redo
-       ;;"m" 'aking/latex-convert-to-big
+       "m" 'aking/latex-convert-to-big
        "p"
        (gkd 'ak-current-file-name :timeout 0.5
 	    "p" 'ak-current-file-dir
@@ -520,6 +449,11 @@
 	    "d"
 	    (gkd 'edit-config :timeout 0.5
 		 "d" 'spacemacs/find-dotfile))
+       "s"
+       (gkd 'aking/save :timeout 0.5
+	    "a" 'aking/save-all
+	    "/" 'evil-save-and-quit)
+       ;; "i" 'save-reload-init
        "f"
        (gkd  '(lambda () (interactive)
 		    ;; (aking/view-pdf)
@@ -546,7 +480,7 @@
 	    "c" 'aking/dired-cs
 	    "d" 'aking/dired-dot
 	    "p" 'projectile-dired)
-       ";"
+       "t"
        (gkd 'aking/latex-template :timeout 0.5
 	    "d" 'aking/test
 	    "n" 'aking/latex-new
@@ -554,7 +488,7 @@
 	    "s"
 	    (gkd  'aking/latex-upsync-default :timeout 0.5
 		  "s" 'aking/latex-upsync))
-       ":"
+       "l"
        (gkd 'aking/latex-new :timeout 0.5
 	    "c" (gsk "; u C-c C-e")
 	    "l" (gsk "C-c C-l")
@@ -575,6 +509,9 @@
 
 ;; }}}
 ;;; keymaps {{{
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; global
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (gdk :states '(motion normal visual operator insert emacs)
   "C-k" nil ; kill-line restore
@@ -583,18 +520,9 @@
   "C-z" nil
   "C-y" nil
   "C-w" nil
-
-  "RET" 'ak-newline
-  "C-c C-s" 'eval-buffer
-  "M-e" 'move-end-of-line
-  "M-a" 'move-beginning-of-line
-  "C-c C-y" 'ak-paste-after-prepending-nl
-  "C-M-y" 'ak-paste-after-prepending-2nl
-  "C-x ;" 'comment-line
-  "S-<f10>" 'recompile
-  "C-f" 'projectile-find-file
   "C-d" 'ak-duplicate-after
   "C-x C-p" 'projectile-switch-project
+  "C-M-b" 'buffer-menu
   "C-M-S-t" 'mode-line-other-buffer
   "s-<return>" 'ak-make
   "M-s-g" 'ak-generate-makefile
@@ -637,21 +565,17 @@
   "_" 'evil-visual-char
   "," (gsk "0 _ $")
   "H" 'evil-visual-line
-  ;; yank/paste:
-  "y" 'ak-yank
+  ;; paste:
   "b" 'evil-paste-after
   "B" 'evil-paste-before
   "w" 'ak-paste-after-prepending-nl
-  "W" 'ak-paste-before-appending-nl
   "v" 'ak-paste-after-prepending-2nl
-  "V" 'ak-paste-before-appending-2nl
   ;; delete/change:
   "e" 'evil-delete
   "l" 'evil-change
   "k" 'evil-delete-char
   "K" 'evil-delete-backward-char
-  ";" 'ak-evil-erase
-  "j" 'ak-evil-erase
+  ";" 'ak-time
   ;; misc:
   "'" 'evil-join
   "J" (gsk "a <return>")
@@ -662,16 +586,15 @@
   "x a" 'outline-show-subtree
   "TAB" 'outline-toggle-children
   "x m" 'outline-hide-body
-  ;; "x r" 'vimish-fold-unfold-all
-  ;; "x a" 'vimish-fold-unfold
-  ;; "TAB" 'vimish-fold-toggle
-  ;; "x m" 'vimish-fold-refold-all
-  ;; "x a" 'origami-toggle-node
-  ;; "TAB" 'origami-recursively-toggle-node
-  ;; "x r" 'origami-open-all-nodes
-  ;; "x o" 'origami-open-node
-  ;; "x m" 'origami-close-all-nodes
-  )
+  "x r" 'vimish-fold-unfold-all
+  "x a" 'vimish-fold-unfold
+  "TAB" 'vimish-fold-toggle
+  "x m" 'vimish-fold-refold-all
+  "x a" 'origami-toggle-node
+  "TAB" 'origami-recursively-toggle-node
+  "x r" 'origami-open-all-nodes
+  "x o" 'origami-open-node
+  "x m" 'origami-close-all-nodes)
 
 (gdk :states '(motion normal)
   "Z" (gsk "D %")
@@ -681,13 +604,16 @@
 
 (gdk :states '(visual)
   "TAB" 'ak-duplicate
-  "c" (gsk "<down> $ m")
-  "r" (gsk "<up> $ <left>")
   "Z" (gsk "D %")
   "C" (gsk "0 D c s")
   "R" (gsk "s D r")
   "G" (gsk "c s m")
   "F" (gsk "D s o r"))
+
+
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; mode specific
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (gdk :keymaps 'org-mode-map
   :states '(motion normal visual)
@@ -731,14 +657,3 @@
 ;;     "SPC" 'aking/yas-expand-or-self-insert 
 ;;     "q" 'aking/project-sq)
 ;; ;; }}}
-;;; test stuff {{{
-
-(require 'ansi-color)
-(defun my/ansi-colorize-buffer ()
-  (let ((buffer-read-only nil))
-    (ansi-color-apply-on-region (point-min) (point-max))))
-(add-hook 'compilation-filter-hook 'my/ansi-colorize-buffer)
-
-;;; }}}
-
-;;;(message "config successfully loaded")
