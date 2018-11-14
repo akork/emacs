@@ -6,6 +6,9 @@
 
 ;;; help {{{
 
+;; minor (bound-and-true-p yas-minor-mode)
+;; major (derived-mode-p 'json-mode 'emacs-lisp-)
+
 ;; (string= evil-state "normal")
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue  
 ;; S - shift, s - super
@@ -493,12 +496,12 @@
       "SPC"
       (gkd 'helm-projectile-switch-project :timeout 1
        "i" (ak-find-file-home ".ideavimrc")
-       "q" (ak-find-file-home ".qutebrowser/config.py")
+       "b" (ak-find-file-home ".qutebrowser/config.py")
        "k" (ak-find-file-home ".config/karabiner/karabiner.json")
        "t" (ak-find-file-home "Library/Application Support/transmission-daemon/settings.json")
        "v" (ak-find-file-home "yd/cfg/vim/min.vim")
        "e" (ak-find-file-home "yd/cfg/emacs/min.el")
-       "m" (ak-find-file-home "yd/cfg/qmk_firmware/ak-first-keymap.c")
+       "q" (ak-find-file-home "yd/cfg/qmk_firmware/ak-first-keymap.c")
        "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
 
        "r" 'evil-goto-first-line
@@ -536,7 +539,6 @@
        ;; "w" 'aking/test
        "w" 'ak/view-pdf
        ;;"v" 'aking/view-pdf
-       "b" 'aking/latex-build
        "h" 'avy-goto-word-1
        "n" 'avy-goto-line
        "o"
@@ -574,7 +576,7 @@
 	    )))
 
 ;; }}}
-;;; keymaps {{{
+;; keymaps {{{
 
 (gdk :states '(motion normal visual operator insert emacs)
   "C-k" nil ; kill-line restore
@@ -584,6 +586,8 @@
   "C-y" nil
   "C-w" nil
 
+  "C-x g" 'magit-status
+  "C-x e" 'eval-buffer
   "RET" 'ak-newline
   "C-c C-s" 'eval-buffer
   "M-e" 'move-end-of-line
