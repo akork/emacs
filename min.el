@@ -1,5 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 ;;; -*- enable-recursive-minibuffers: t -*-
+;;; -*- load-prefer-newer t -*-
 
 (setq ak-home "/Users/AK/")
 ;; (setq enable-recursive-minibuffers t)
@@ -84,7 +85,7 @@
 
 (load-theme 'dracula t)
 
-(set-face-attribute 'default (selected-frame) :height 122)
+(set-face-attribute 'default (selected-frame) :height 180)
 (set-face-attribute 'default nil :background "#000")
 (set-face-attribute 'fringe nil :background "#000")
 (set-face-attribute 'font-lock-comment-face nil :foreground "#f00")
@@ -494,7 +495,7 @@
 (gdk :states '(emacs motion normal visual)
       ;; :keymaps 'doc-view-mode-map
       "SPC"
-      (gkd 'helm-projectile-switch-project :timeout 1
+      (gkd 'projectile-switch-project :timeout 1
        "i" (ak-find-file-home ".ideavimrc")
        "b" (ak-find-file-home ".qutebrowser/config.py")
        "k" (ak-find-file-home ".config/karabiner/karabiner.json")
@@ -576,7 +577,7 @@
 	    )))
 
 ;; }}}
-;; keymaps {{{
+;;; keymaps {{{
 
 (gdk :states '(motion normal visual operator insert emacs)
   "C-k" nil ; kill-line restore
@@ -586,19 +587,20 @@
   "C-y" nil
   "C-w" nil
 
+  "C-x b" 'ibuffer
   "C-x g" 'magit-status
   "C-x e" 'eval-buffer
+  "C-x C-p" 'projectile-switch-project
+  "C-x ;" 'comment-line
   "RET" 'ak-newline
   "C-c C-s" 'eval-buffer
   "M-e" 'move-end-of-line
   "M-a" 'move-beginning-of-line
   "C-c C-y" 'ak-paste-after-prepending-nl
   "C-M-y" 'ak-paste-after-prepending-2nl
-  "C-x ;" 'comment-line
   "S-<f10>" 'recompile
   "C-f" 'projectile-find-file
   "C-d" 'ak-duplicate-after
-  "C-x C-p" 'projectile-switch-project
   "C-M-S-t" 'mode-line-other-buffer
   "s-<return>" 'ak-make
   "M-s-g" 'ak-generate-makefile
@@ -719,6 +721,13 @@
 	  (lambda ()
 	    (evil-define-key
 	      'normal dired-mode-map "r" 'dired-previous-line)))
+
+(add-hook 'ibuffer-mode-hook
+	  (lambda ()
+	    (gdk
+	      :keymaps 'ibuffer-mode-map
+	      "c" 'ibuffer-forward-line
+	      "r" 'ibuffer-backward-line)))
 
 ;; (evil-global-set-key 'normal "r" 'evil-previous-line)
 
