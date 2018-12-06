@@ -484,7 +484,7 @@
 
 ;;; }}}
 ;;; leader-map {{{
-(gdk :states '(emacs motion normal visual)
+(gdk :states '(motion normal visual)
               "q"
               (gkd 'evil-record-macro :timeout 1
        "a" 'origami-recursively-toggle-node
@@ -492,7 +492,7 @@
        "o" 'origami-recursively-toggle-node
        "m" 'origami-close-all-nodes))
 
-(gdk :states '(emacs motion normal visual)
+(gdk :states '(motion normal visual)
       ;; :keymaps 'doc-view-mode-map
       "SPC"
       (gkd 'projectile-switch-project :timeout 1
@@ -563,6 +563,7 @@
 	    "l" (gsk "C-c C-l")
 	    "e" (gsk "C-c `")
 	    "n" (gsk "C-c C-e")
+	    
 	    "s"
 	    (gkd 'aking/yas-latex :timeout 0.5
 		 "s" 'aking/yas-latex-script)
@@ -721,6 +722,15 @@
 	  (lambda ()
 	    (evil-define-key
 	      'normal dired-mode-map "r" 'dired-previous-line)))
+
+(add-hook 'magit-status-mode-hook
+	  (lambda ()
+	    (gdk
+	      :keymaps 'magit-status-mode-map
+	      "C-x g" 'magit-commit-popup
+	      ")" 'magit-commit-popup
+	      "c" 'magit-section-forward
+	      "r" 'magit-section-backward)))
 
 (add-hook 'ibuffer-mode-hook
 	  (lambda ()
