@@ -4,6 +4,7 @@
 
 (setq ak-home "/Users/AK/")
 ;; (setq enable-recursive-minibuffers t)
+(setq-default explicit-shell-file-name "/usr/local/bin/bash")
 
 ;;; help {{{
 
@@ -106,13 +107,16 @@
 
 (global-hl-line-mode 1)
 (set-face-attribute hl-line-face nil
-		    :background "#00f")
+		    :background "#007")
 
-(show-paren-mode 1)
+(show-paren-mode 0)
 (set-face-attribute 'show-paren-match nil
 		    :background "#a0f"
 		    ;; :box '(:color "deep pink" :line-width 2)
 		    )
+
+(add-to-list 'load-path "~/.emacs.d/hl-line+/")
+(require 'hl-line+)
 
 ;;; }}}
 ;;; projectile {{{
@@ -128,9 +132,9 @@
    When called with argument DIR, make that main project instead."
   (interactive)
   (if dir
+          (setq ak-projectile-current-project dir)
       (setq ak-projectile-current-project dir)
-    (setq ak-projectile-current-project dir)
-    (let ((current-project))
+      (let ((current-project))
       (let ((ak-projectile-current-project nil))
 	(setq current-project (projectile-project-root)))
       (setq ak-projectile-current-project current-project))))
@@ -216,6 +220,8 @@
 ;; }}}
 ;;; feel {{{
 
+
+;; (electric-pair-mode 1)
 (global-auto-revert-mode t)
 (setq visible-bell 1)
 (setq scroll-margin 8)
@@ -289,21 +295,13 @@
 		       (transmission-mode . emacs)
 		       (transmission-files-mode . emacs)
 		       (message-buffer-mode . emacs)
-		       (dired-mode . emacs)))
+		       (dired-mode . emacs)
+		       (undo-tree-visualizer-mode . emacs)))
       (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
+;; iiiii
 ;;; }}}
 ;;; hooks {{{
-
-(setq-default ibuffer-saved-filter-groups
-              `(("default"
-                 ;; I create a group call Dired, which contains all buffer in dired-mode
-                 ("Dired" (mode . dired-mode))
-		 ("Magit" (name . "\*magit"))
-                 ("Temporary" (name . "\*.*\*"))
-		 ("Help" (or (name . "\*Help\*")
-			     (name . "\*Apropos\*")
-			     (name . "\*info\*"))))))
 
 (add-hook 'ibuffer-mode-hook
 	  (lambda ()
@@ -312,8 +310,34 @@
 	    (setq ibuffer-show-empty-filter-groups nil)
 	    (ibuffer-switch-to-saved-filter-groups "default")))
 
+(require 'ibuffer-git)
+
+(setq ibuffer-formats
+      '((
+	 mark modified read-only locked " "
+	 (name 22 18 :left :elide)
+	 " " (size 9 -1 :right)
+	 " " (mode 20 16 :left :elide)
+	 " " (git-status 8 8 :left)
+	 " " filename-and-process)))
+
+
+(setq ibuffer-hook nil)
 (add-hook 'ibuffer-hook
 	  (lambda ()
+	    (setq-default ibuffer-saved-filter-groups
+			  (list (cons "default"
+				      (append
+				       '(("Help" (or (name . "\*Help\*")
+						     (name . "\*Apropos\*")
+						     (name . "\*info\*"))))
+				       '(("Dired" (mode . dired-mode)))
+				       '(("Temporary" (name . "\*.*\*")))
+				       (ibuffer-vc-generate-filter-groups-by-vc-root)
+				       '(("Magit" (or (mode . magit-status-mode)
+						      (mode . magit-commit))))))))
+	    ;; (ibuffer-vc-set-filter-groups-by-vc-root)
+	    (ibuffer-switch-to-saved-filter-groups "default")
 	    (ibuffer-jump-to-buffer (buffer-name (cadr (buffer-list))))))
 
 (add-hook 'emacs-lisp-mode-hook (lambda () (lispy-mode 1)))
@@ -350,17 +374,17 @@
 (defun ak-eval ()
   (interactive)
   (if (use-region-p)
-                      (eval-region)
-            (eval-last-sexp (point))))
+                          (eval-region)
+              (eval-last-sexp (point))))
 
 (defun ak-indent-buffer ()
   (interactive)
   (save-excursion
-            (save-restriction
-              (mark-whole-buffer)
-              (indent-region (region-beginning) (region-end))
-              ;; (setq transient-mark-mode nil)
-              (keyboard-quit))))
+              (save-restriction
+                (mark-whole-buffer)
+                (indent-region (region-beginning) (region-end))
+                ;; (setq transient-mark-mode nil)
+                (keyboard-quit))))
 
 (defun ak-yank-pop-forwards (arg)
   (interactive "p")
@@ -369,23 +393,23 @@
 (defun ak-duplicate ()
   (interactive)
   (if (region-active-p)
-                      (progn
-	        (kill-ring-save (region-beginning) (region-end))
-	        (ak-paste-prepending-nl))
+                          (progn
+	          (kill-ring-save (region-beginning) (region-end))
+	          (ak-paste-prepending-nl))
     (progn
-              (move-beginning-of-line 1)
-              (kill-line)
-              (yank)
-              (open-line 1)
-              (next-line 1)
-              (yank))))
+                (move-beginning-of-line 1)
+                (kill-line)
+                (yank)
+                (open-line 1)
+                (next-line 1)
+                (yank))))
 
 (defun ak-select-from-lb ()
   (interactive)
   (set-mark (line-beginning-position))
   (let ((le (if (eq (line-beginning-position) (line-end-position))
-		                (line-end-position)
-	              (- (line-end-position) 1))))
+		                    (line-end-position)
+	                (- (line-end-position) 1))))
     (goto-char le)))
 
 (defun ak-newline ()
@@ -393,7 +417,7 @@
   (if (and (boundp 'evil-state)
 	   (eq evil-state 'normal)
 	   (not (= (line-beginning-position) (point))))
-          (forward-char 1))
+              (forward-char 1))
   (newline))
 
 (defun ak-yank ()
@@ -405,57 +429,57 @@
   ;; (backward-char 1)
   (insert "\n")
   (save-excursion
-      (backward-char 1)
-      (yank)
-      ;; (evil-paste-before 1)
-      (indent-region (region-beginning) (region-end)))
+        (backward-char 1)
+        (yank)
+        ;; (evil-paste-before 1)
+        (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-paste-before-appending-2nl ()
   (interactive)
   (insert "\n\n")
   (save-excursion
-      (backward-char 2)
-      (yank)
-      ;; (evil-paste-before 1)
-      (indent-region (region-beginning) (region-end)))
+        (backward-char 2)
+        (yank)
+        ;; (evil-paste-before 1)
+        (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-paste-after-prepending-nl ()
   (interactive)
   (if (and (boundp 'evil-state)
 	   (eq evil-state 'normal))
-          (forward-char 1))
+              (forward-char 1))
   (insert "\n")
   (save-excursion
-      (yank)
-      ;; (evil-paste-before 1)
-      (indent-region (region-beginning) (region-end)))
+        (yank)
+        ;; (evil-paste-before 1)
+        (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-paste-after-prepending-2nl ()
   (interactive)
   (if (and (boundp 'evil-state)
 	   (eq evil-state 'normal))
-          (forward-char 1))
+              (forward-char 1))
   (insert "\n\n")
   (save-excursion
-      (yank)
-      ;; (evil-paste-before 1)
-      (indent-region (region-beginning) (region-end)))
+        (yank)
+        ;; (evil-paste-before 1)
+        (indent-region (region-beginning) (region-end)))
   (back-to-indentation))
 
 (defun ak-duplicate-region-after ()
   (interactive)
   (if (eq evil-state 'normal)
-      (kill-ring-save (region-beginning) (1+ (region-end)))
-    (kill-ring-save (region-beginning) (region-end)))
+          (kill-ring-save (region-beginning) (1+ (region-end)))
+      (kill-ring-save (region-beginning) (region-end)))
   (ak-paste-after-prepending-nl))
 
 (defun ak-duplicate-after ()
   (interactive)
   (if (not (region-active-p))
-      (set-mark (line-beginning-position)))
+          (set-mark (line-beginning-position)))
   (ak-duplicate-region-after))
 
 (global-set-key "\M-Y" 'ak-yank-pop-forwards)
@@ -463,8 +487,8 @@
 (defun ak-org-edit-src ()
   (interactive)
   (if (derived-mode-p 'org-mode)
-          (org-edit-special)
-      (org-edit-src-exit)))
+              (org-edit-special)
+        (org-edit-src-exit)))
 
 (defun ak-previous-open-brace ()
   (interactive)
@@ -473,10 +497,10 @@
   (evil-previous-open-brace))
 
 (evil-define-command ak-current-file-name ()
-          "Copy the current buffer-file-name to the clipboard."
-          (let ((filename (if (equal major-mode 'dired-mode)
-		                      default-directory
-		            (buffer-file-name))))
+            "Copy the current buffer-file-name to the clipboard."
+            (let ((filename (if (equal major-mode 'dired-mode)
+		                          default-directory
+		              (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
       (kill-new filename)
@@ -485,10 +509,10 @@
       filename)))
 
 (evil-define-command ak-current-file-dir ()
-          "Copy the current file-name-directory to the clipboard."
-	  (let ((filename (if (equal major-mode 'dired-mode)
-			      default-directory
-			    (buffer-file-name))))
+            "Copy the current file-name-directory to the clipboard."
+	    (let ((filename (if (equal major-mode 'dired-mode)
+			          default-directory
+			      (buffer-file-name))))
 	    (when filename
 	      (setq select-enable-clipboard t)
 	      (kill-new (file-name-directory filename))
@@ -497,8 +521,8 @@
 	      (file-name-directory filename))))
 
 (evil-define-operator ak-evil-erase (beg end type register yank-handler)
-  (interactive "<R><x><y>")
-  (evil-delete beg end type ?_ yank-handler))
+    (interactive "<R><x><y>")
+    (evil-delete beg end type ?_ yank-handler))
 
 (defun ak-transmission-find-file-dir ()
   ;;(transmission-files-file-at-point)
@@ -513,29 +537,79 @@
   (interactive)
   ;; (message res)
   (let
-      ;; ((filePath (shell-command-to-string (concat "LANG=''; ~/yd/cfg/scripts/open-file-dir.pl \"" (transmission-files-file-at-point) "\""))))
-      ((filePath (transmission-files-file-at-point)))
-    (setq filePath (transmission-files-file-at-point))
-    (message (concat "path is " filePath))
-    (dired (file-name-directory filePath))
-    (revert-buffer)
-    (goto-char 1)
-    (search-forward (file-name-nondirectory filePath))
-    ;; (find-file filePath)
-    ))
+          ;; ((filePath (shell-command-to-string (concat "LANG=''; ~/yd/cfg/scripts/open-file-dir.pl \"" (transmission-files-file-at-point) "\""))))
+          ((filePath (transmission-files-file-at-point)))
+      (setq filePath (transmission-files-file-at-point))
+      (message (concat "path is " filePath))
+      (dired (file-name-directory filePath))
+      (revert-buffer)
+      (goto-char 1)
+      (search-forward (file-name-nondirectory filePath))
+      ;; (find-file filePath)
+      ))
    
 (defun ak-dired-find-file ()
   (interactive)
   (let ((file-path (dired-get-file-for-visit)))
     (message file-path)
     (if (file-directory-p file-path)
-	(dired-find-file)
-      (shell-command (concat "open \"" file-path "\"")))))
+	    (dired-find-file)
+        (shell-command (concat "open \"" file-path "\"")))))
 
 (evil-define-operator ak-evil-delete-char (beg end type)
-  :motion evil-forward-char
-  (interactive "<R>")
-  (evil-delete beg end type ?_))
+    :motion evil-forward-char
+    (interactive "<R>")
+    (evil-delete beg end type ?_))
+
+(defun ak-toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+         (next-win-buffer (window-buffer (next-window)))
+         (this-win-edges (window-edges (selected-window)))
+         (next-win-edges (window-edges (next-window)))
+         (this-win-2nd (not (and (<= (car this-win-edges)
+                     (car next-win-edges))
+                     (<= (cadr this-win-edges)
+                     (cadr next-win-edges)))))
+         (splitter
+          (if (= (car this-win-edges)
+             (car (window-edges (next-window))))
+          'split-window-horizontally
+	  'split-window-vertically)))
+	(delete-other-windows)
+	(let ((first-win (selected-window)))
+	  (funcall splitter)
+	  (if this-win-2nd (other-window 1))
+	  (set-window-buffer (selected-window) this-win-buffer)
+	  (set-window-buffer (next-window) next-win-buffer)
+	  (select-window first-win)
+	  (if this-win-2nd (other-window 1))))))
+
+(defun ak-switch-to-previous-buffer ()
+  "Switch to previously open buffer.
+Repeated invocations toggle between the two most recently open buffers."
+  (interactive)
+  (let* ((ob (other-buffer (current-buffer)))
+	 (ob (if (string= (buffer-name ob) "*Ibuffer*")
+		  (other-buffer ob)
+		ob)))
+    ;;(message (buffer-name ob))
+    ;;(message (buffer-name obn)) 
+    (switch-to-buffer ob)
+    ))
+
+(defun ak-save-all ()
+  (interactive)
+  (save-some-buffers 'no-confirm (lambda () t)))
+
+;;; }}}
+;; compile {{{
+
+(defun ak-compile ()
+  (interactive)
+  (ak-save-all)
+  (compile compile-command))
 
 ;; }}}
 ;;; general config {{{
@@ -543,28 +617,28 @@
 ;; (add-to-list 'load-path "~/.emacs.d/general")
 
 (use-package general
-      :config
-      (general-evil-setup t)
-      (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
-      (general-create-definer gdk)
+    :config
+    (general-evil-setup t)
+    (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
+    (general-create-definer gdk)
 
-      (defalias 'gkd 'general-key-dispatch)
-      (defalias 'gsk 'general-simulate-keys))
+    (defalias 'gkd 'general-key-dispatch)
+    (defalias 'gsk 'general-simulate-keys))
 
 ;;; }}}
 ;;; leader-map {{{
 (gdk :states '(motion normal visual)
-                  "q"
-                  (gkd 'evil-record-macro :timeout 1
+                    "q"
+                    (gkd 'evil-record-macro :timeout 1
        "a" 'origami-recursively-toggle-node
        "r" 'origami-open-all-nodes
        "o" 'origami-recursively-toggle-node
        "m" 'origami-close-all-nodes))
 
 (gdk :states '(motion normal visual)
-          ;; :keymaps 'doc-view-mode-map
-          "SPC"
-          (gkd 'projectile-switch-project :timeout 1
+            ;; :keymaps 'doc-view-mode-map
+            "SPC"
+            (gkd 'projectile-switch-project :timeout 1
        "i" (ak-find-file-home ".ideavimrc")
        "b" (ak-find-file-home ".qutebrowser/config.py")
        "k" (ak-find-file-home ".config/karabiner/karabiner.json")
@@ -596,14 +670,14 @@
 		 "d" 'spacemacs/find-dotfile))
        "f"
        (gkd  '(lambda () (interactive)
-		        ;; (aking/view-pdf)
-		        (aking/compile-project)
-		        )
+		          ;; (aking/view-pdf)
+		          (aking/compile-project)
+		          )
 	 :timeout 0.5
 	 "c" '(lambda () (interactive)
-		        (aking/view-pdf)
-		        (aking/compile-project)
-		        (preview-buffer)))
+		          (aking/view-pdf)
+		          (aking/compile-project)
+		          (preview-buffer)))
        ;; "g" 'helm-projectile-grep
        "g" 'magit-status
        ;; "g" 'preview-buffer
@@ -650,43 +724,66 @@
 ;; }}}
 ;;; keymaps {{{
 
+(gdk :states '(motion normal visual emacs)
+  "(" 'ak-half-page-up
+  ")" 'outline-toggle-children
+  )
+
 (gdk :states '(motion normal visual operator insert emacs)
-    "C-k" nil ; kill-line restore
-    "C-a" nil
-    "C-e" nil
-    "C-z" nil
-    "C-y" nil
-    "C-w" nil
+  "C-k" nil				; kill-line restore
+  "C-a" nil
+  "C-e" nil
+  "C-z" nil
+  "C-y" nil
+  "C-w" nil
+  "C-f" nil
+  "C-b" nil
 
-    "C-x C-j C-c" 'save-buffers-kill-emacs
-    "C-x b" 'ibuffer
-    "C-x g" 'magit-status
-    "C-x e" 'eval-buffer
-    "C-x C-p" 'projectile-switch-project
-    "C-x ;" 'comment-line
+  "C-x C-j C-c" 'save-buffers-kill-emacs
+  "C-x b" 'ibuffer
+  "C-x g" 'magit-status
+  "C-x e" 'eval-buffer
+  "C-x C-p" 'projectile-switch-project
+  "C-x ;" 'comment-line
+  "C-x f" 'projectile-find-file
+  "C-x C-j b" 'ak-compile
+  "C-x C-j C-b" 'ak-compile
+  "C-x C-j i" 'kill-compilation
+  "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
+  "C-x C-j d" 'dired
+  "C-x C-j C-d" 'projectile-dired
+  "C-x C-j M-d" 'dired
 
-    "C-c C-s" 'eval-buffer
-    "M-e" 'move-end-of-line
-    "M-a" 'move-beginning-of-line
-    "C-c C-y" 'ak-paste-after-prepending-nl
-    "C-M-y" 'ak-paste-after-prepending-2nl
-    "S-<f10>" 'recompile
-    "C-f" 'projectile-find-file
-    "C-d" 'ak-duplicate-after
-    "C-M-S-t" 'mode-line-other-buffer
-    "s-<return>" 'ak-make
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    ;;    :predicate '(not (derived-mode-p 'term-mode))
-    "M-<right>" 'forward-word
-    "M-<left>" 'evil-backward-word-begin
-    "s-<right>" 'move-end-of-line
-    "s-<left>" 'back-to-indentation
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    "M-s-g" 'ak-generate-makefile
-    "C-M-i" 'evil-jump-item
-    "C-M-e" 'er/expand-region)
+  ;; terminal
+  "M-x" 'execute-extended-command
+  "M-:" 'eval-expression
+  "C-x o" 'other-window
+  "C-x 0" 'delete-window
+  "C-x 3" 'split-window-right 
+  "C-h k" 'describe-key
+
+  "C-c C-s" 'eval-buffer
+  "M-e" 'move-end-of-line
+  "M-a" 'move-beginning-of-line
+  "C-c C-y" 'ak-paste-after-prepending-nl
+  "C-M-y" 'ak-paste-after-prepending-2nl
+  "S-<f10>" 'recompile
+  ;; "C-f" 'projectile-find-file
+  "C-d" 'ak-duplicate-after
+  "C-M-S-t" 'mode-line-other-buffer
+  "s-<return>" 'ak-make
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  ;;    :predicate '(not (derived-mode-p 'term-mode))
+  "M-<right>" 'forward-word
+  "M-<left>" 'evil-backward-word-begin
+  "s-<right>" 'move-end-of-line
+  "s-<left>" 'back-to-indentation
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  "M-s-g" 'ak-generate-makefile
+  "C-M-i" 'evil-jump-item
+  "C-M-e" 'er/expand-region)
 
 (gdk :states '(motion normal visual operator)
     "RET" 'ak-newline
@@ -697,6 +794,8 @@
     "N" 'evil-forward-WORD-begin
     "p" 'evil-backward-word-begin
     "P" 'evil-backward-WORD-begin
+    "\\" 'evil-forward-word-end
+    "|" 'evil-forward-WORD-end
     "d" 'evil-first-non-blank
     "s" 'evil-end-of-line
     "c" 'evil-next-line
@@ -710,8 +809,10 @@
     "z" 'evil-jump-item
     "}" (gsk "C-o")
     "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-    "(" 'forward-paragraph
-    ")" 'backward-paragraph
+    ;; "(" 'forward-paragraph
+    ;; ")" 'backward-paragraph
+    ;; "(" 'ak-half-page-up
+    ;; ")" 'ak-half-page-down
     ;; visual:
     "_" 'evil-visual-char
     "," (gsk "0 _ $")
@@ -725,7 +826,7 @@
     "v" 'ak-paste-after-prepending-2nl
     "V" 'ak-paste-before-appending-2nl
     ;; delete/change:
-    "e" 'evil-delete
+    ;; "e" 'evil-delete
     "l" 'evil-change
     "k" 'ak-evil-delete-char
     "K" 'evil-delete-backward-char
@@ -733,7 +834,7 @@
     ;; misc:
     "'" 'evil-join
     "J" (gsk "a <return>")
-    "DEL" 'projectile-find-file
+    ;; "DEL" 'projectile-find-file
     ;; foldig:
     "x" nil
     "x r" 'outline-show-all
@@ -780,6 +881,7 @@
 	      (gdk :states '('normal 'visual) :keymaps 'lispy-mode-map
 	        ";" 'lispy-comment)))
 
+
 ;; (add-hook 
 ;;  'transmission-mode-hook
 ;;  (lambda ()
@@ -799,16 +901,35 @@
 	   "c" 'next-line
 	   "r" 'previous-line))
 
+(add-hook 'undo-tree-visualizer-mode-hook
+	  (lambda ()
+	    (gdk
+	      :states 'emacs
+	      :keymaps 'undo-tree-visualizer-mode-map
+	      "c" 'next-line
+	      "r" 'previous-line
+	      "f" 'undo-tree-visualize-switch-branch-right
+	      "g" 'undo-tree-visualize-switch-branch-left)))
+
+(add-hook 'help-mode-hook
+	  (lambda ()
+	    (gdk
+	      :states 'emacs
+	      :keymaps 'help-mode-map
+	      ;; ")" 'ak-half-page-down
+	      ;; "(" 'ak-half-page-up
+	      )))
+
 (add-hook 'transmission-files-mode-hook
 	  (lambda ()
-	      ;; (evil-set-initial-state 'transmission-files-mode 'emacs)
-	      (gdk
-	        :states 'emacs
-	        :keymaps 'transmission-files-mode-map
-	        "RET" 'ak-transmission-find-file
-	        "s-RET" 'ak-transmission-find-file-dir
-	        "c" 'next-line
-	        "r" 'previous-line)))
+	    ;; (evil-set-initial-state 'transmission-files-mode 'emacs)
+	    (gdk
+	      :states 'emacs
+	      :keymaps 'transmission-files-mode-map
+	      "RET" 'ak-transmission-find-file
+	      "s-RET" 'ak-transmission-find-file-dir
+	      "c" 'next-line
+	      "r" 'previous-line)))
 
 ;; (evil-make-overriding-map transmission-files-mode-map)
 
