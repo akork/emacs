@@ -135,56 +135,6 @@
 (setq projectile-generic-command "find -L . -type f -print0")
 
 ;;; }}}
-;;; frame title {{{
-
-(defvar ak-project-name "project A")
-
-(defun ak-set-title ()
-  (concat
-   ;; (abbreviate-file-name (buffer-file-name))
-   (if (boundp 'ak-projectile-current-project)
-               ak-projectile-current-project
-         "::")
-   "  "
-   (buffer-name)
-   "  "
-   (format-time-string "%T")))
-
-  ;; (let ((name
-  ;;        (if buffer-file-name
-  ;;            (buffer-file-name)
-  ;;          (buffer-name))))
-  ;;   (concat ak-project-name " : " name)))
-
-(setq frame-title-format
-	'(:eval (ak-set-title)))
-
-;; (setq interval 1)
-
-;; (defun run-every-ten-seconds ()
-;;   (interactive)
-;;   ;; (ak-set-frame-title)
-;;   (set-frame-parameter nil 'title "dummy")
-;;   (set-frame-parameter nil 'title nil)
-;;   ;; (message (current-time-string))
-;;   )
-
-;; (defun start-timer ()
-;;   (interactive)
-;;   (setq timer
-;;         (run-at-time (current-time)  interval
-;;                      'run-every-ten-seconds)))
-
-;; (start-timer)
-
-;; (run-at-time
-;;  (time-add (current-time) (seconds-to-time interval))
-;;  interval 'run-every-ten-seconds)
-
-;; (setq display-line-numbers-type 'relative)
-;; (global-display-line-numbers-mode)
-
-;; }}}
 ;;; feel {{{
 
 
@@ -663,6 +613,56 @@ Repeated invocations toggle between the two most recently open buffers."
       evil-visual-state-cursor '(box "#F86155"))
 
 ;;; }}}
+;;; frame title {{{
+
+(defvar ak-project-name "project A")
+
+(defun ak-set-title ()
+  (concat
+   ;; (abbreviate-file-name (buffer-file-name))
+   (if (boundp 'ak-projectile-current-project)
+       ak-projectile-current-project
+     "::")
+   "  "
+   (buffer-name)
+   "  "
+   (format-time-string "%T")))
+
+;; (let ((name
+;;        (if buffer-file-name
+;;            (buffer-file-name)
+;;          (buffer-name))))
+;;   (concat ak-project-name " : " name)))
+
+;; (setq frame-title-format
+;; 	'(:eval (ak-set-title)))
+
+;; (setq interval 1)
+
+;; (defun run-every-ten-seconds ()
+;;   (interactive)
+;;   ;; (ak-set-frame-title)
+;;   (set-frame-parameter nil 'title "dummy")
+;;   (set-frame-parameter nil 'title nil)
+;;   ;; (message (current-time-string))
+;;   )
+
+;; (defun start-timer ()
+;;   (interactive)
+;;   (setq timer
+;;         (run-at-time (current-time)  interval
+;;                      'run-every-ten-seconds)))
+
+;; (start-timer)
+
+;; (run-at-time
+;;  (time-add (current-time) (seconds-to-time interval))
+;;  interval 'run-every-ten-seconds)
+
+;; (setq display-line-numbers-type 'relative)
+;; (global-display-line-numbers-mode)
+
+;; }}}
 ;;; general config {{{
 
 ;; (add-to-list 'load-path "~/.emacs.d/general")
@@ -861,8 +861,8 @@ Repeated invocations toggle between the two most recently open buffers."
   "g" 'ak-half-page-down
   ;; advanced movement:
   "j" 'evil-forward-WORD-begin
-  "h" (gkd 'evil-search-forward :timeout 0.5
-	   "h" 'ak-org-edit-src)
+  "h" (gkd 'evil-find-char-to :timeout 0.5
+	   "h" 'evil-search-forward)
   "z" 'evil-jump-item
   "}" (gsk "C-o")
   "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
