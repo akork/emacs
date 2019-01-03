@@ -256,6 +256,7 @@
   (eval-after-load "diff-mode" '(evil-make-overriding-map diff-mode-map))
   (eval-after-load "compilation-mode" '(evil-make-overriding-map compilation-mode-map))
    (dolist (mode-map '((comint-mode . insert)
+		       (text-mode . insert)
                        (term-mode . insert)
                        (eshell-mode . emacs)
                        (help-mode . emacs)
