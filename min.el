@@ -18,23 +18,33 @@
 ;;; }}}
 ;;; package.el {{{
 
-(require 'package)
+;; (require 'package)
 
-(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
-                    (not (gnutls-available-p))))
-       (proto (if no-ssl "http" "https")))
-  ;; Comment/uncomment these two lines to enable/disable MELPA and MELPA Stable as desired
-  (add-to-list 'package-archives (cons "melpa" (concat proto "://melpa.org/packages/")) t)
-  ;;(add-to-list 'package-archives (cons "melpa-stable" (concat proto "://stable.melpa.org/packages/")) t)
-  (when (< emacs-major-version 24)
-    ;; For important compatibility libraries like cl-lib
-    (add-to-list 'package-archives '("gnu" . (concat proto "://elpa.gnu.org/packages/")))))
+; list the packages you want
+(setq package-list '(use-package smex counsel))
+
+; list the repositories containing them
+(setq package-archives '(("melpa" . "http://melpa.org/packages/")
+			 ("elpa" . "http://tromey.com/elpa/")
+                         ("marmalade" . "http://marmalade-repo.org/packages/")))
+
+; activate all the packages (in particular autoloads)
 (package-initialize)
 
+; fetch the list of packages available 
+(unless package-archive-contents
+  (package-refresh-contents))
+
+; install the missing packages
+(dolist (package package-list)
+  (unless (package-installed-p package)
+    (package-install package)))
+
+;; (require 'org)
+					;(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
 (require 'use-package)
 
-(require 'org)
-					;(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
+;; (use-package smex)
 
 ;;; }}}
 ;;; folding {{{
@@ -76,49 +86,6 @@
 (add-hook 'find-file-hook 'ak-set-vim-foldmarker-and-hide-except)
 
 ;; }}}
-;;; look {{{
-
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(toggle-scroll-bar -1)
-(setq frame-resize-pixelwise t)
-
-(load-theme 'dracula t)
-
-(set-face-attribute 'default nil :height 150)
-(set-face-attribute 'default nil :background "#000")
-(set-face-attribute 'fringe nil :background "#000")
-(set-face-attribute 'font-lock-comment-face nil :foreground "#f00")
-
-(add-hook 'minibuffer-setup-hook
-          (lambda ()
-                      (make-local-variable 'face-remapping-alist)
-	              (add-to-list 'face-remapping-alist '(default (:background "#f00")))))
-
-(eval-after-load "ido"
-'(set-face-attribute 'ido-first-match nil
-		    :foreground "#0f0"))
-
-(set-face-attribute 'mode-line nil
-		    :background "#00f")
-
-(set-face-attribute 'minibuffer-prompt nil
-		    :foreground "#0f0")
-
-(global-hl-line-mode 1)
-(set-face-attribute hl-line-face nil
-		    :background "#007")
-
-(show-paren-mode 0)
-(set-face-attribute 'show-paren-match nil
-		    :background "#a0f"
-		    ;; :box '(:color "deep pink" :line-width 2)
-		    )
-
-(add-to-list 'load-path "~/.emacs.d/hl-line+/")
-(require 'hl-line+)
-
-;;; }}}
 ;;; projectile {{{
 
 ;; (setq projectile-main-project nil)
@@ -287,8 +254,9 @@
   (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map))
   (eval-after-load "package" '(evil-make-overriding-map package-menu-mode-map))
   (eval-after-load "diff-mode" '(evil-make-overriding-map diff-mode-map))
-   (dolist (mode-map '((comint-mode . emacs)
-                       (term-mode . emacs)
+  (eval-after-load "compilation-mode" '(evil-make-overriding-map compilation-mode-map))
+   (dolist (mode-map '((comint-mode . insert)
+                       (term-mode . insert)
                        (eshell-mode . emacs)
                        (help-mode . emacs)
                        (fundamental-mode . emacs)
@@ -296,19 +264,19 @@
 		       (transmission-files-mode . emacs)
 		       (message-buffer-mode . emacs)
 		       (dired-mode . emacs)
-		       (undo-tree-visualizer-mode . emacs)))
+		       (undo-tree-visualizer-mode . emacs)
+		       (compilation-mode . emacs)))
       (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
-;; iiiii
 ;;; }}}
 ;;; hooks {{{
 
 (add-hook 'ibuffer-mode-hook
 	  (lambda ()
-	    (setq ibuffer-expert t)
-	    (ibuffer-auto-mode 1)
-	    (setq ibuffer-show-empty-filter-groups nil)
-	    (ibuffer-switch-to-saved-filter-groups "default")))
+	        (setq ibuffer-expert t)
+	        (ibuffer-auto-mode 1)
+	        (setq ibuffer-show-empty-filter-groups nil)
+	        (ibuffer-switch-to-saved-filter-groups "default")))
 
 (require 'ibuffer-git)
 
@@ -359,6 +327,10 @@
 (defun ak-find-file-home (file)
   (interactive)
   (lambda () (interactive) (find-file (expand-file-name (concat ak-home file)))))
+
+(defun ak-dired-opener (path)
+  (interactive)
+  (lambda () (interactive) (dired path)))
 
 (defun ak-half-page-down ()
   (interactive)
@@ -603,8 +575,29 @@ Repeated invocations toggle between the two most recently open buffers."
   (interactive)
   (save-some-buffers 'no-confirm (lambda () t)))
 
+(evil-define-motion ak-end-of-line-or-block ()
+  (let ((ak-line-end-position (1- (line-end-position))))
+    (if (or (eq evil-state 'visual)
+	    (eq evil-state 'normal)
+	    (eq evil-state 'operator)
+	    (eq evil-state 'motion))
+	(if (or (= (point) (line-end-position))
+		(= (point) (1- (line-end-position))))
+	    (forward-paragraph)
+	  (evil-end-of-line)))))
+
+(evil-define-motion ak-beginning-of-line-or-block ()
+  (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
+    (if (= (point) first-nonblank)
+	(backward-paragraph)
+      (back-to-indentation))))
+
+(defun ak-term ()
+  (interactive)
+  (term explicit-shell-file-name))
+
 ;;; }}}
-;; compile {{{
+;;; compile {{{
 
 (defun ak-compile ()
   (interactive)
@@ -612,18 +605,75 @@ Repeated invocations toggle between the two most recently open buffers."
   (compile compile-command))
 
 ;; }}}
+;;; look {{{
+
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(toggle-scroll-bar -1)
+(setq frame-resize-pixelwise t)
+
+(load-theme 'dracula t)
+
+(set-face-attribute 'default nil :height 150)
+(set-face-attribute 'default nil :background "#000")
+(set-face-attribute 'fringe nil :background "#000")
+(set-face-attribute 'font-lock-comment-face nil :foreground "#0cc")
+
+;; (add-hook 'minibuffer-setup-hook
+;;           (lambda ()
+;;             (make-local-variable 'face-remapping-alist)
+;; 	    (add-to-list 'face-remapping-alist '(default (:background "#f00")))))
+
+(eval-after-load "ido"
+  '(set-face-attribute 'ido-first-match nil
+		       :foreground "#0f0"))
+
+(set-face-attribute 'mode-line nil
+		    :background "#00f")
+
+(set-face-attribute 'minibuffer-prompt nil
+		    :foreground "#0f0")
+
+(global-hl-line-mode 1)
+(set-face-attribute hl-line-face nil
+		    :background "#007")
+
+(show-paren-mode 1)
+(set-face-attribute 'show-paren-match nil
+		    :background "#a0f"
+		    ;; :box '(:color "deep pink" :line-width 2)
+		    )
+
+(add-to-list 'load-path "~/.emacs.d/hl-line+/")
+(require 'hl-line+)
+
+(require 'ansi-color)
+   (setq ansi-color-names-vector
+         (vector (frame-parameter nil 'background-color)
+    	       "#f57900" "#8ae234" "#edd400" "#729fcf"
+    	       "#ad7fa8" "cyan3" "#eeeeec")
+         ansi-term-color-vector ansi-color-names-vector
+         ansi-color-map (ansi-color-make-color-map))
+
+(setq evil-mode-line-format nil
+      evil-normal-state-cursor '(box "#00FFFF")
+      evil-emacs-state-cursor '(box "#FF0000")
+      evil-insert-state-cursor '(bar "#FF0000")
+      evil-visual-state-cursor '(box "#F86155"))
+
+;;; }}}
 ;;; general config {{{
 
 ;; (add-to-list 'load-path "~/.emacs.d/general")
 
 (use-package general
-    :config
-    (general-evil-setup t)
-    (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
-    (general-create-definer gdk)
+      :config
+      (general-evil-setup t)
+      (general-create-definer gdk-ov :keymaps 'ak-keymap-mode-map)
+      (general-create-definer gdk)
 
-    (defalias 'gkd 'general-key-dispatch)
-    (defalias 'gsk 'general-simulate-keys))
+      (defalias 'gkd 'general-key-dispatch)
+      (defalias 'gsk 'general-simulate-keys))
 
 ;;; }}}
 ;;; leader-map {{{
@@ -739,6 +789,7 @@ Repeated invocations toggle between the two most recently open buffers."
   "C-f" nil
   "C-b" nil
 
+  "M-x" 'counsel-M-x
   "C-x C-j C-c" 'save-buffers-kill-emacs
   "C-x b" 'ibuffer
   "C-x g" 'magit-status
@@ -750,12 +801,13 @@ Repeated invocations toggle between the two most recently open buffers."
   "C-x C-j C-b" 'ak-compile
   "C-x C-j i" 'kill-compilation
   "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
+  "C-x C-j k C-[" 'ak-switch-to-previous-buffer
   "C-x C-j d" 'dired
   "C-x C-j C-d" 'projectile-dired
-  "C-x C-j M-d" 'dired
+  "C-x C-j M-d" (ak-dired-opener "~")
+  "C-x C-j C-t" 'ak-term
 
   ;; terminal
-  "M-x" 'execute-extended-command
   "M-:" 'eval-expression
   "C-x o" 'other-window
   "C-x 0" 'delete-window
@@ -785,72 +837,76 @@ Repeated invocations toggle between the two most recently open buffers."
   "C-M-i" 'evil-jump-item
   "C-M-e" 'er/expand-region)
 
+;; ----------------------------------------------------------------------------
+;; motion keymap
+;; ----------------------------------------------------------------------------
+
 (gdk :states '(motion normal visual operator)
-    "RET" 'ak-newline
-    ;; basic movement:
-    "t" 'evil-forward-char
-    "m" 'evil-backward-char
-    "n" 'evil-forward-word-begin
-    "N" 'evil-forward-WORD-begin
-    "p" 'evil-backward-word-begin
-    "P" 'evil-backward-WORD-begin
-    "\\" 'evil-forward-word-end
-    "|" 'evil-forward-WORD-end
-    "d" 'evil-first-non-blank
-    "s" 'evil-end-of-line
-    "c" 'evil-next-line
-    "r" 'evil-previous-line
-    "f" 'ak-half-page-up
-    "g" 'ak-half-page-down
-    ;; advanced movement:
-    "j" 'evil-forward-WORD-begin
-    "h" (gkd 'evil-search-forward :timeout 0.5
+  "RET" 'ak-newline
+  ;; basic movement:
+  "t" 'evil-forward-char
+  "m" 'evil-backward-char
+  "n" 'evil-forward-word-begin
+  "N" 'evil-forward-WORD-begin
+  "p" 'evil-backward-word-begin
+  "P" 'evil-backward-WORD-begin
+  "\\" 'evil-forward-word-end
+  "b" 'evil-forward-WORD-end
+  "d" 'ak-beginning-of-line-or-block
+  "s" 'ak-end-of-line-or-block
+  "c" 'evil-next-line
+  "r" 'evil-previous-line
+  "f" 'ak-half-page-up
+  "g" 'ak-half-page-down
+  ;; advanced movement:
+  "j" 'evil-forward-WORD-begin
+  "h" (gkd 'evil-search-forward :timeout 0.5
 	   "h" 'ak-org-edit-src)
-    "z" 'evil-jump-item
-    "}" (gsk "C-o")
-    "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-    ;; "(" 'forward-paragraph
-    ;; ")" 'backward-paragraph
-    ;; "(" 'ak-half-page-up
-    ;; ")" 'ak-half-page-down
-    ;; visual:
-    "_" 'evil-visual-char
-    "," (gsk "0 _ $")
-    "H" 'evil-visual-line
-    ;; yank/paste:
-    "y" 'ak-yank
-    "b" 'evil-paste-after
-    "B" 'evil-paste-before
-    "w" 'ak-paste-after-prepending-nl
-    "W" 'ak-paste-before-appending-nl
-    "v" 'ak-paste-after-prepending-2nl
-    "V" 'ak-paste-before-appending-2nl
-    ;; delete/change:
-    ;; "e" 'evil-delete
-    "l" 'evil-change
-    "k" 'ak-evil-delete-char
-    "K" 'evil-delete-backward-char
-    "j" 'ak-evil-erase
-    ;; misc:
-    "'" 'evil-join
-    "J" (gsk "a <return>")
-    ;; "DEL" 'projectile-find-file
-    ;; foldig:
-    "x" nil
-    "x r" 'outline-show-all
-    "x a" 'outline-show-subtree
-    "TAB" 'outline-toggle-children
-    "x m" 'outline-hide-body
-    ;; "x r" 'vimish-fold-unfold-all
-    ;; "x a" 'vimish-fold-unfold
-    ;; "TAB" 'vimish-fold-toggle
-    ;; "x m" 'vimish-fold-refold-all
-    ;; "x a" 'origami-toggle-node
-    ;; "TAB" 'origami-recursively-toggle-node
-    ;; "x r" 'origami-open-all-nodes
-    ;; "x o" 'origami-open-node
-    ;; "x m" 'origami-close-all-nodes
-    )
+  "z" 'evil-jump-item
+  "}" (gsk "C-o")
+  "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
+  ;; "(" 'forward-paragraph
+  ;; ")" 'backward-paragraph
+  ;; "(" 'ak-half-page-up
+  ;; ")" 'ak-half-page-down
+  ;; visual:
+  "_" 'evil-visual-char
+  "," (gsk "0 _ $")
+  "H" 'evil-visual-line
+  ;; yank/paste:
+  "y" 'ak-yank
+  ;; "b" 'evil-paste-after
+  ;; "B" 'evil-paste-before
+  "w" 'ak-paste-after-prepending-nl
+  "W" 'ak-paste-before-appending-nl
+  "v" 'ak-paste-after-prepending-2nl
+  "V" 'ak-paste-before-appending-2nl
+  ;; delete/change:
+  "l" 'evil-delete
+  "e" 'evil-change
+  "k" 'ak-evil-delete-char
+  "K" 'evil-delete-backward-char
+  "j" 'ak-evil-erase
+  ;; misc:
+  "'" 'evil-join
+  "J" (gsk "a <return>")
+  ;; "DEL" 'projectile-find-file
+  ;; foldig:
+  "x" nil
+  "x r" 'outline-show-all
+  "x a" 'outline-show-subtree
+  "TAB" 'outline-toggle-children
+  "x m" 'outline-hide-body
+  ;; "x r" 'vimish-fold-unfold-all
+  ;; "x a" 'vimish-fold-unfold
+  ;; "TAB" 'vimish-fold-toggle
+  ;; "x m" 'vimish-fold-refold-all
+  ;; "x a" 'origami-toggle-node
+  ;; "TAB" 'origami-recursively-toggle-node
+  ;; "x r" 'origami-open-all-nodes
+  ;; "x o" 'origami-open-node
+  ;; "x m" 'origami-close-all-nodes
+  )
 
 (gdk :states '(motion normal)
     "Z" (gsk "D %")
