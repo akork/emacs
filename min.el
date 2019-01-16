@@ -319,6 +319,38 @@
 (add-hook 'emacs-lisp-mode-hook (lambda () (lispy-mode 1)))
 
 ;;; }}}
+
+;;; dired {{{
+
+(defun ak-dired-find-file ()
+  (interactive)
+  (let ((file-path (dired-get-file-for-visit)))
+    (message file-path)
+    (if (file-directory-p file-path)
+      (dired-find-file)
+      (shell-command (concat "open \"" file-path "\"")))))
+
+(defun ak-dired-opener (path &optional interactive)
+  (interactive)
+  (lambda () (interactive)
+    (when (= (count-windows) 1)
+      (split-window-right))
+    (other-window 1)
+    (if interactive
+      (let ((default-directory path))
+        (call-interactively 'dired))
+      (dired path))))
+
+(use-package all-the-icons-dired
+  :after all-the-icons
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(defun ak-dired ()
+  (interactive)
+  (let ((default-directory "~/yd/"))
+    (call-interactively 'dired)))
+
+;;; }}}
 ;;; funcs {{{
 
 (defun ak-time ()
@@ -335,10 +367,6 @@
 (defun ak-find-file-home (file)
   (interactive)
   (lambda () (interactive) (find-file (expand-file-name (concat ak-home file)))))
-
-(defun ak-dired-opener (path)
-  (interactive)
-  (lambda () (interactive) (dired path)))
 
 (defun ak-half-page-down ()
   (interactive)
@@ -528,14 +556,6 @@
     ;; (find-file filePath)
     ))
 
-(defun ak-dired-find-file ()
-  (interactive)
-  (let ((file-path (dired-get-file-for-visit)))
-    (message file-path)
-    (if (file-directory-p file-path)
-      (dired-find-file)
-      (shell-command (concat "open \"" file-path "\"")))))
-
 (evil-define-operator ak-evil-delete-char (beg end type)
   :motion evil-forward-char
   (interactive "<R>")
@@ -657,18 +677,15 @@ Repeated invocations toggle between the two most recently open buffers."
     ;; (eshell-send-input)
     ))
 
-(defun ak-dired ()
-  (interactive)
-  (let ((default-directory "~/yd/"))
-    (call-interactively 'dired)))
-
 (defun ak-buffer-file-name ()
   (interactive)
-  (kill-new buffer-file-name))
+  (let ((buf (buffer-base-buffer)))
+    (unless buf (setq buf (current-buffer)))
+    (kill-new (buffer-file-name buf))))
 
-(defun ak-buffer-file-name-directory ()
+(defun ak-default-directory ()
   (interactive)
-  (kill-new (file-name-directory buffer-file-name)))
+  (kill-new default-directory))
 
 (defun match-paren (arg)
   "Go to the matching paren if on a paren; otherwise insert %."
@@ -728,9 +745,13 @@ Version 2016-11-22"
 
 (defun ak-outline-next-heading ()
   (interactive)
-  (outline-next-heading)
-  (backward-sexp)
-  (forward-sexp))
+  (let ((point-before (point))
+         (backward-move (lambda () (previous-line 3)))
+         (point-after (progn (outline-next-heading) (point))))
+    (if (= (point) (save-excursion (funcall backward-move) (outline-next-heading) (point)))
+      (funcall backward-move))
+    (when (<= (point) point-before)
+      (outline-next-heading))))
 
 ;;; }}}
 ;;; compile {{{
@@ -818,10 +839,6 @@ Version 2016-11-22"
   (use-package font-lock+
     :straight (:host github :repo "emacsmirror/font-lock-plus")
     :config (require 'font-lock+)))
-
-(use-package all-the-icons-dired
-  :after all-the-icons
-  :hook (dired-mode . all-the-icons-dired-mode))
 
 (setq vj/font-name "Hack")
 (defcustom vj/font-size 15 "My default font size")
@@ -981,6 +998,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "q"
   (gkd 'evil-record-macro :timeout 1
     "<tab>" 'ak-outline-next-heading
+    "-" 'ak-outline-next-heading
     "a" 'origami-recursively-toggle-node
     "r" 'origami-open-all-nodes
     "o" 'origami-recursively-toggle-node
@@ -1076,9 +1094,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;;; keymaps {{{
 
 (gdk :states '(motion normal visual emacs)
-  "(" 'ak-half-page-up
-  ")" 'outline-toggle-children
-  )
+  "(" 'ak-half-page-up)
 
 (gdk :states '(motion normal visual operator insert)
   "s-<right>" 'move-end-of-line
@@ -1095,7 +1111,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-w" nil
   "C-f" nil
   "C-b" nil
-  "-" nil
   "h" nil
 
   "M-x" '(lambda () (interactive) (counsel-M-x ""))
@@ -1113,7 +1128,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
   "C-x C-j k C-[" 'ak-switch-to-previous-buffer
 
-  "C-x C-j d" 'ak-dired
+  "C-x C-j d" (ak-dired-opener default-directory)
   "C-x C-j D" 'ak-test
   "C-x C-j C-d" 'projectile-dired
   "C-x C-j M-d" (ak-dired-opener "~/yd")
@@ -1123,7 +1138,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j 0" 'ak-toggle-window-split
   "C-M-%" 'ak-query-replace-regexp-or-joker
   "C-x C-j p" 'ak-buffer-file-name
-  "C-x C-j C-p" 'ak-buffer-file-name-directory
+  "s-C" 'ak-buffer-file-name
+  "C-x C-j C-p" 'ak-default-directory
 
   ;; terminal
   "M-:" 'eval-expression
@@ -1184,6 +1200,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "}" (gsk "C-o")
   "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
   "%" 'ak-jump-item
+  ")" 'ak-outline-next-heading
+  "(" 'outline-previous-heading
+  "-" 'outline-toggle-children
   ;; "(" 'forward-paragraph
   ;; ")" 'backward-paragraph
   ;; "(" 'ak-half-page-up
@@ -1401,7 +1420,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;;   (gdk :keymaps 'latex-mode-map
 ;;     "SPC" 'aking/yas-expand-or-self-insert
 ;;     "q" 'aking/project-sq)
-;; ;; }}}
+
+;;; }}}
 ;;; test stuff {{{
 
 (require 'ansi-color)
