@@ -2,14 +2,6 @@
 ;;; -*- enable-recursive-minibuffers: t -*-
 ;;; -*- load-prefer-newer t -*-
 
-(setq ak-home "/Users/AK/")
-;; (setq enable-recursive-minibuffers t)
-(setq-default explicit-shell-file-name "/usr/local/bin/bash")
-
-(defun ak-log (mes)
-  (interactive)
-  (message (concat mes " : " (current-time-string))))
-
 ;;; help {{{
 
 ;; minor (bound-and-true-p yas-minor-mode)
@@ -18,6 +10,16 @@
 ;; (string= evil-state "normal")
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue
 ;; S - shift, s - super
+
+;;; }}}
+;;; before init {{{
+
+(setq ak-home "/Users/AK/")
+(setq-default explicit-shell-file-name "/usr/local/bin/bash")
+
+(defun ak-log (mes)
+  (interactive)
+  (message (concat mes " : " (current-time-string))))
 
 ;;; }}}
 ;;; straight {{{
@@ -82,6 +84,7 @@
   ("C-x o" 'ace-window))
 
 (use-package lispy)
+(use-package persistent-overlays)
 
 ;; (use-package smex)
 
@@ -89,12 +92,12 @@
 ;;; folding {{{
 (ak-log "folding")
 
-(defun ak-origami-triple-braces ()
-  (interactive)
-  (setq-local origami-fold-style 'triple-braces)
-  (origami-mode 1)
-  (run-at-time "0.1 sec" nil `(lambda ()
-  (origami-show-only-node (current-buffer) (point)))))
+;; (defun ak-origami-triple-braces ()
+;;   (interactive)
+;;   (setq-local origami-fold-style 'triple-braces)
+;;   (origami-mode 1)
+;;   (run-at-time "0.1 sec" nil `(lambda ()
+;;                                 (origami-show-only-node (current-buffer) (point)))))
 
 (defun ak-set-foldmarker (fmr)
   "Set Vim-type foldmarkers for the current buffer"
@@ -116,14 +119,17 @@
 (defun ak-set-vim-foldmarker-and-hide-except ()
   (interactive)
   (ak-set-foldmarker (concat "{{" "{"))
-  (run-at-time "1 sec" nil
-    `(lambda ()
-       (outline-hide-body)
-       (outline-toggle-children))))
+  ;; (run-at-time "1 sec" nil
+  ;;   `(lambda ()
+  ;;      (outline-hide-body)
+  ;;      (outline-toggle-children)))
+  (persistent-overlays-minor-mode)
+  )
 
 (add-hook 'emacs-lisp-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
 (add-hook 'emacs-lisp-mode-hook (lambda () (ak-test)))
 (add-hook 'sh-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
+(add-hook 'vimrc-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
 ;; (add-hook 'find-file-hook 'ak-set-vim-foldmarker-and-hide-except)
 
 (setq ak-test-variable '((lambda () (ak-test)) (lambda () ak-home)))
@@ -132,33 +138,30 @@
 ;;; projectile {{{
 (ak-log "projectile")
 
-(defcustom ak-projectile-project-name
-  :type 'string)
-(setq ak-projectile-current-project nil)
-
 (use-package projectile
-  :commands (projectile-switch-project projectile-find-file ak-set-main-project)
+  :commands (projectile-switch-project projectile-find-file ak-set-main-project ak-projectile-set-persistent-project)
   :config
+  (defcustom ak-projectile-project-name
+    :type 'string)
+  (setq ak-projectile-current-project nil)
 
-  (unless (and (boundp 'ak-already-loaded) ak-already-loaded)
-    (fset 'ak-ump (symbol-function 'projectile-project-root)))
-  (setq ak-already-loaded t)
+  ;; preserve projectile-project-root before advicing
+  (unless (and (boundp 'ak-projectile-project-root--original)
+            ak-projectile-project-root--original)
+    (fset 'ak-projectile-project-root--original (symbol-function 'projectile-project-root)))
 
-  (defun ak-set-main-project (&optional dir)
+  (defun ak-projectile-set-persistent-project (&optional dir)
     "Set the projectile main project based on the current buffer.
    When called with argument DIR, make that main project instead."
     (interactive)
     (unless dir
-      (setq dir (ak-ump)))
+      (setq dir (ak-projectile-project-root--original)))
     (message (concat "dir = " dir))
     (setq ak-projectile-current-project dir)
     (projectile-add-known-project dir)
     (projectile-switch-project-by-name dir))
 
-  (defun ak-set-project-to-switch-as-main (project-to-switch &optional arg)
-    (ak-set-main-project project-to-switch))
-
-  (defun ak-use-main-project (oldfun &rest args)
+  (defun ak-projectile-project-root--advice (oldfun &rest args)
     "Skip calling `projectile-project-root' when there is a main project defined."
 
     (if (and (boundp 'ak-projectile-current-project)
@@ -168,19 +171,16 @@
         ak-projectile-current-project)
       (funcall oldfun)))
 
-  (defun ak-projectile-project-name (oldfun &rest args)
+  (defun ak-projectile-project-name--advice (oldfun &rest args)
     (if (and nil (boundp 'ak-projectile-project-name)
           ak-projectile-project-name)
       ak-projectile-project-name
       (funcall oldfun)))
 
-  ;; (defun set-main-pro (project-to-switch &optional arg))
-  (advice-add #'projectile-project-root :around #'ak-use-main-project)
-  (advice-add #'projectile-project-name :around #'ak-projectile-project-name)
+  (advice-add #'projectile-project-root :around #'ak-projectile-project-root--advice)
+  (advice-add #'projectile-project-name :around #'ak-projectile-project-name--advice)
 
-  (advice-add #'projectile-switch-project-by-name
-    :before #'ak-set-project-to-switch-as-main)
-
+  (projectile-load-known-projects)
   (setq projectile-generic-command "find -L . -type f -print0"))
 
 ;;; }}}
@@ -274,17 +274,71 @@
                        (magit-popup-mode . emacs)))
     (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
-(message "after evil")
+(evil-define-command ak-current-file-name ()
+  "Copy the current buffer-file-name to the clipboard."
+  (let ((filename (if (equal major-mode 'dired-mode)
+                    default-directory
+                    (buffer-file-name))))
+    (when filename
+      (setq select-enable-clipboard t)
+      (kill-new filename)
+      (setq select-enable-clipboard nil)
+      (message "'%s' to the clipboard." filename)
+      filename)))
+
+(evil-define-command ak-current-file-dir ()
+  "Copy the current file-name-directory to the clipboard."
+  (let ((filename (if (equal major-mode 'dired-mode)
+                    default-directory
+                    (buffer-file-name))))
+    (when filename
+      (setq select-enable-clipboard t)
+      (kill-new (file-name-directory filename))
+      (setq select-enable-clipboard nil)
+      (message "'%s' to the clipboard." (file-name-directory filename))
+      (file-name-directory filename))))
+
+(evil-define-operator ak-evil-erase (beg end type register yank-handler)
+  (interactive "<R><x><y>")
+  (evil-delete beg end type ?_ yank-handler))
+
+(defun ak-evil-erase-line ()
+  (interactive)
+  (evil-delete (line-beginning-position) (1+ (line-end-position)) 'char ?_))
+
+(evil-define-operator ak-evil-delete-char (beg end type)
+  :motion evil-forward-char
+  (interactive "<R>")
+  (evil-delete beg end type ?_))
+
+(evil-define-motion ak-end-of-line-or-block (count)
+  :type inclusive
+  (let ((ak-line-end-position (1- (line-end-position))))
+    (if (or (eq evil-state 'visual)
+          (eq evil-state 'normal)
+          (eq evil-state 'operator)
+          (eq evil-state 'motion))
+      (if (or (= (point) (line-end-position))
+            (= (point) (1- (line-end-position))))
+        (forward-paragraph)
+        (move-end-of-line count)))))
+
+(evil-define-motion ak-beginning-of-line-or-block ()
+  :type exclusive
+  (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
+    (if (= (point) first-nonblank)
+      (backward-paragraph)
+      (back-to-indentation))))
 
 ;;; }}}
 ;;; hooks {{{
 
 (add-hook 'ibuffer-mode-hook
   (lambda ()
-  (setq ibuffer-expert t)
-  (ibuffer-auto-mode 1)
-  (setq ibuffer-show-empty-filter-groups nil)
-  (ibuffer-switch-to-saved-filter-groups "default")))
+    (setq ibuffer-expert t)
+    (ibuffer-auto-mode 1)
+    (setq ibuffer-show-empty-filter-groups nil)
+    (ibuffer-switch-to-saved-filter-groups "default")))
 
 (use-package ibuffer-git)
 
@@ -317,6 +371,8 @@
     (ibuffer-jump-to-buffer (buffer-name (cadr (buffer-list))))))
 
 (add-hook 'emacs-lisp-mode-hook (lambda () (lispy-mode 1)))
+
+(add-hook 'after-init-hook (lambda () (counsel-mode 1)))
 
 ;;; }}}
 
@@ -504,34 +560,6 @@
   (end-of-line)
   (evil-previous-open-brace))
 
-(evil-define-command ak-current-file-name ()
-  "Copy the current buffer-file-name to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-                    default-directory
-                    (buffer-file-name))))
-    (when filename
-      (setq select-enable-clipboard t)
-      (kill-new filename)
-      (setq select-enable-clipboard nil)
-      (message "'%s' to the clipboard." filename)
-      filename)))
-
-(evil-define-command ak-current-file-dir ()
-  "Copy the current file-name-directory to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-                    default-directory
-                    (buffer-file-name))))
-    (when filename
-      (setq select-enable-clipboard t)
-      (kill-new (file-name-directory filename))
-      (setq select-enable-clipboard nil)
-      (message "'%s' to the clipboard." (file-name-directory filename))
-      (file-name-directory filename))))
-
-(evil-define-operator ak-evil-erase (beg end type register yank-handler)
-  (interactive "<R><x><y>")
-  (evil-delete beg end type ?_ yank-handler))
-
 (defun ak-transmission-find-file-dir ()
   ;;(transmission-files-file-at-point)
   (interactive)
@@ -555,11 +583,6 @@
     (search-forward (file-name-nondirectory filePath))
     ;; (find-file filePath)
     ))
-
-(evil-define-operator ak-evil-delete-char (beg end type)
-  :motion evil-forward-char
-  (interactive "<R>")
-  (evil-delete beg end type ?_))
 
 (defun ak-toggle-window-split ()
   (interactive)
@@ -602,23 +625,6 @@ Repeated invocations toggle between the two most recently open buffers."
 (defun ak-save-all ()
   (interactive)
   (save-some-buffers 'no-confirm (lambda () t)))
-
-(evil-define-motion ak-end-of-line-or-block ()
-  (let ((ak-line-end-position (1- (line-end-position))))
-    (if (or (eq evil-state 'visual)
-          (eq evil-state 'normal)
-          (eq evil-state 'operator)
-          (eq evil-state 'motion))
-      (if (or (= (point) (line-end-position))
-            (= (point) (1- (line-end-position))))
-        (forward-paragraph)
-        (evil-end-of-line)))))
-
-(evil-define-motion ak-beginning-of-line-or-block ()
-  (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
-    (if (= (point) first-nonblank)
-      (backward-paragraph)
-      (back-to-indentation))))
 
 (defun ak-term ()
   (interactive)
@@ -752,6 +758,18 @@ Version 2016-11-22"
       (funcall backward-move))
     (when (<= (point) point-before)
       (outline-next-heading))))
+
+(defun ak-outline-show-all--wrapper (fun)
+  (interactive)
+  (save-restriction
+    (let ((tbuf nil))
+      (setq tbuf (persistent-overlays-get-existing-overlays))
+      (outline-show-all)
+      (call-interactively fun)
+      (eval-buffer tbuf)
+      (kill-buffer tbuf))))
+
+(advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
 
 ;;; }}}
 ;;; compile {{{
@@ -919,44 +937,36 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;;; }}}
 ;;; frame title {{{
 
-;; (defvar ak-project-name "project A")
+(defvar ak-project-name "project A")
 
-;; (defun ak-set-title ()
-;;   (concat
-;;   ;; (abbreviate-file-name (buffer-file-name))
-;;   (if (boundp 'ak-projectile-current-project)
-;;   (file-name-nondirectory (directory-file-name ak-projectile-current-project)))
-;;   "  ::  "
-;;   (buffer-name)
-;;   "  "
-;;   (format-time-string "%T")))
+(defun ak-set-title ()
+  (concat
+    ;; (abbreviate-file-name (buffer-file-name))
+    (if (and (boundp 'ak-projectile-current-project)
+          ak-projectile-current-project)
+      (file-name-nondirectory (directory-file-name ak-projectile-current-project)))
+    "  ::  "
+    (buffer-name)
+    "  "
+    (format-time-string "%T")))
 
-;; ;; (let ((name
-;; ;;        (if buffer-file-name
-;; ;;            (buffer-file-name)
-;; ;;          (buffer-name))))
-;; ;;   (concat ak-project-name " : " name)))
+(setq frame-title-format
+  '(:eval (ak-set-title)))
 
-;; (setq frame-title-format
-;;   '(:eval (ak-set-title)))
+(setq interval 1)
 
-;; (setq interval 1)
+(defun run-every-ten-seconds ()
+  (interactive)
+  (set-frame-parameter nil 'title "42")
+  (set-frame-parameter nil 'title nil))
 
-;; (defun run-every-ten-seconds ()
-;;   (interactive)
-;;   ;; (ak-set-frame-title)
-;;   (set-frame-parameter nil 'title "dummy")
-;;   (set-frame-parameter nil 'title nil)
-;;   ;; (message (current-time-string))
-;;   )
+(defun start-timer ()
+  (interactive)
+  (setq timer
+    (run-at-time (current-time)  interval
+      'run-every-ten-seconds)))
 
-;; (defun start-timer ()
-;;   (interactive)
-;;   (setq timer
-;;   (run-at-time (current-time)  interval
-;;   'run-every-ten-seconds)))
-
-;; (start-timer)
+(start-timer)
 
 ;; (run-at-time
 ;;  (time-add (current-time) (seconds-to-time interval))
@@ -1006,7 +1016,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 
 (gdk :states '(motion normal visual insert emacs)
   ;; :keymaps 'doc-view-mode-map
-  "C-x M-x"
+  "C-M-y"
   (gkd 'projectile-switch-project :timeout 1
     "i" (ak-find-file-home ".ideavimrc")
     "b" (ak-find-file-home ".qutebrowser/config.py")
@@ -1113,7 +1123,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-b" nil
   "h" nil
 
-  "M-x" '(lambda () (interactive) (counsel-M-x ""))
+  "M-x"   '(lambda () (interactive) (counsel-M-x ""))
   "C-x C-c" 'save-buffers-kill-emacs
   "C-x C-j C-c" 'save-buffers-kill-terminal
   "C-x b" 'ibuffer
@@ -1122,7 +1132,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
   "C-x f" 'projectile-find-file
-  "C-x C-j b" 'ak-compile
+  "s-<f10>" 'ak-compile
   "C-x C-j C-b" 'ak-compile
   "C-x C-j i" 'kill-compilation
   "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
@@ -1134,7 +1144,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j M-d" (ak-dired-opener "~/yd")
   "C-x C-j s-d" (ak-dired-opener "~/yd")
 
-  "C-x C-j C-t" 'ak-eshell-other-window
+  "M-<f12>" 'ak-eshell-other-window
   "C-x C-j 0" 'ak-toggle-window-split
   "C-M-%" 'ak-query-replace-regexp-or-joker
   "C-x C-j p" 'ak-buffer-file-name
@@ -1152,7 +1162,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "M-e" 'move-end-of-line
   "M-a" 'move-beginning-of-line
   "C-c C-y" 'ak-paste-after-prepending-nl
-  "C-M-y" 'ak-paste-after-prepending-2nl
+  "C-Y" 'ak-paste-after-prepending-2nl
   "S-<f10>" 'recompile
   ;; "C-f" 'projectile-find-file
   "C-d" 'ak-duplicate-after
@@ -1203,40 +1213,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   ")" 'ak-outline-next-heading
   "(" 'outline-previous-heading
   "-" 'outline-toggle-children
-  ;; "(" 'forward-paragraph
-  ;; ")" 'backward-paragraph
-  ;; "(" 'ak-half-page-up
-  ;; ")" 'ak-half-page-down
-  ;; "-" (gsk "_ p l")
-  ;; "-" (gkd 'evil-change :timeout 0.5
-  ;;    "r" (gsk "^ i \"")
-  ;;    "f" (gsk "^ i {")
-  ;;    "[" (gsk "^ i [")
-  ;;    "(" (gsk "^ i b")
-  ;;    "g" (gsk "^ i <")
-  ;;    "-" (gsk "^ i w")
-  ;;    ")" (gsk "^ h )")
-  ;;    "," (gsk "^ h ,")
-  ;;    "." (gsk "^ h ."))
-  "e" (gkd 'evil-change :timeout 1
-        "r" (gsk "^ i \"")
-        "[" (gsk "^ i [")
-        "(" (gsk "^ i (")
-        "g" (gsk "^ i <")
-        "-" (gsk "^ i w")
-        ":" (gsk "^ | :")
-        "SPC" (gsk "^ | SPC")
-        "\"" (gsk "^ | \"")
-        "f" (gsk "^ | \"")
-        ")" (gsk "^ | )")
-        "}" (gsk "^ | }")
-        "]" (gsk "^ | ]")
-        ">" (gsk "^ | >")
-        "c" (gsk "^ | ,")
-        "." (gsk "^ | ."))
   ;; visual:
   "_" 'evil-visual-char
-  "," (gsk "0 _ $")
+  "l" (gsk "0 _ $ m")
   "H" 'evil-visual-line
   ;; yank/paste:
   "y" 'ak-yank
@@ -1247,31 +1226,37 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "v" 'ak-paste-after-prepending-2nl
   "V" 'ak-paste-before-appending-2nl
   ;; delete/change:
-  "l" 'evil-delete
   "^" 'evil-change
-  "k" 'ak-evil-delete-char
+  "e" (gkd 'evil-change :timeout 1
+        "r" (gsk "^ i \"")
+        "[" (gsk "^ i [")
+        "(" (gsk "^ i (")
+        "g" (gsk "^ i <")
+        "-" (gsk "^ i W")
+        ":" (gsk "^ | :")
+        "SPC" (gsk "^ | SPC")
+        "\"" (gsk "^ | \"")
+        "f" (gsk "^ | \"")
+        ")" (gsk "^ | )")
+        "}" (gsk "^ | }")
+        "]" (gsk "^ | ]")
+        ">" (gsk "^ | >")
+        "c" (gsk "^ | ,")
+        "." (gsk "^ | ."))
+  "j" 'evil-yank
+  "y" 'evil-delete
+  "k" 'ak-evil-erase-line
+  "q" 'ak-evil-delete-char
   "K" 'evil-delete-backward-char
-  "j" 'ak-evil-erase
   ;; misc:
   "'" 'evil-join
   "J" (gsk "a <return>")
-  ;; "DEL" 'projectile-find-file
-  ;; foldig:
+  ;; folding:
   "x" nil
   "x r" 'outline-show-all
   "x a" 'outline-show-subtree
   "TAB" 'outline-toggle-children
-  "x m" 'outline-hide-body
-  ;; "x r" 'vimish-fold-unfold-all
-  ;; "x a" 'vimish-fold-unfold
-  ;; "TAB" 'vimish-fold-toggle
-  ;; "x m" 'vimish-fold-refold-all
-  ;; "x a" 'origami-toggle-node
-  ;; "TAB" 'origami-recursively-toggle-node
-  ;; "x r" 'origami-open-all-nodes
-  ;; "x o" 'origami-open-node
-  ;; "x m" 'origami-close-all-nodes
-  )
+  "x m" 'outline-hide-body)
 
 (gdk :states '(motion normal)
   "Z" (gsk "D %")
@@ -1280,14 +1265,18 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "F" (gsk "D s o r"))
 
 (gdk :states '(visual)
-  "TAB" 'ak-duplicate
+  "k" 'ak-evil-erase
   "c" (gsk "<down> $ m")
-  "r" (gsk "<up> $ <left>")
+  ;; "r" (gsk "<up> $ <left>")
   "Z" (gsk "D %")
   "C" (gsk "0 D c s")
   "R" (gsk "s D r")
   "G" (gsk "c s m")
   "F" (gsk "D s o r"))
+
+;; ----------------------------------------------------------------------------
+;; minor modes keymaps
+;; ----------------------------------------------------------------------------
 
 (gdk :keymaps 'org-mode-map
   :states '(motion normal visual)
