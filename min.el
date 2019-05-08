@@ -1,6 +1,5 @@
 ;;; -*- lexical-binding: t -*-
 ;;; -*- enable-recursive-minibuffers: t -*-
-;;; -*- load-prefer-newer t -*-
 
 ;;; help {{{
 
@@ -10,6 +9,7 @@
 ;; (string= evil-state "normal")
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue
 ;; S - shift, s - super
+;; m-o action selection in counsel-mx
 
 ;;; }}}
 ;;; before init {{{
@@ -28,31 +28,11 @@
 ;; (require 'package)
 
                                         ; list the packages you want
-(setq package-list '(use-package smex counsel projectile))
+;; (setq package-list '(use-package smex counsel projectile))
 
                                         ; list the repositories containing them
-(setq package-archives '(("melpa" . "http://melpa.org/packages/")
-                          ("elpa" . "http://tromey.com/elpa/")))
-
-;; (setq package-load-list '((bind-key t) (use-package t)))
-                                        ; activate all the packages (in particular autoloads)
-
-;; (setq package-enable-at-startup nil)
-;; (package-initialize t)
-;; (package-activate 'use-package)
-                                        ; fetch the list of packages available
-;; (unless package-archive-contents
-
-;;   (package-refresh-contents))
-
-                                        ; install the missing packages
-;; (dolist (package package-list)
-;;   (unless (package-installed-p package)
-;;     (package-install package)))
-
-;; (require 'org)
-                                        ;(org-babel-load-file  "/users/aleksey/dropbox/settings/emacs/basic-org.org")
-;; (require 'use-package)
+;; (setq package-archives '(("melpa" . "http://melpa.org/packages/")
+;;                           ("elpa" . "http://tromey.com/elpa/")))
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -74,6 +54,7 @@
 ;;; packages {{{
 (ak-log "packages")
 
+(use-package counsel)                   ; counsel-mx
 (use-package general)
 (use-package ace-window
   :config
@@ -84,7 +65,16 @@
   ("C-x o" 'ace-window))
 
 (use-package lispy)
-(use-package persistent-overlays)
+(use-package persistent-overlays
+  :config
+  (setq persistent-overlays-directory "~/.emacs.d/.emacs-persistent-overlays/"))
+
+(use-package flymake-json)
+
+(use-package meghanada)
+
+;; (use-package magit
+;;   :commands (magit-status))
 
 ;; (use-package smex)
 
@@ -118,6 +108,7 @@
 
 (defun ak-set-vim-foldmarker-and-hide-except ()
   (interactive)
+  (outline-minor-mode 42)
   (ak-set-foldmarker (concat "{{" "{"))
   ;; (run-at-time "1 sec" nil
   ;;   `(lambda ()
@@ -127,7 +118,6 @@
   )
 
 (add-hook 'emacs-lisp-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
-(add-hook 'emacs-lisp-mode-hook (lambda () (ak-test)))
 (add-hook 'sh-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
 (add-hook 'vimrc-mode-hook 'ak-set-vim-foldmarker-and-hide-except)
 ;; (add-hook 'find-file-hook 'ak-set-vim-foldmarker-and-hide-except)
@@ -304,7 +294,9 @@
 
 (defun ak-evil-erase-line ()
   (interactive)
-  (evil-delete (line-beginning-position) (1+ (line-end-position)) 'char ?_))
+  (if (eq evil-state 'visual)
+    (call-interactively 'ak-evil-erase)
+    (evil-delete (line-beginning-position) (1+ (line-end-position)) 'char ?_)))
 
 (evil-define-operator ak-evil-delete-char (beg end type)
   :motion evil-forward-char
@@ -312,6 +304,7 @@
   (evil-delete beg end type ?_))
 
 (evil-define-motion ak-end-of-line-or-block (count)
+  :jump t
   :type inclusive
   (let ((ak-line-end-position (1- (line-end-position))))
     (if (or (eq evil-state 'visual)
@@ -324,6 +317,7 @@
         (move-end-of-line count)))))
 
 (evil-define-motion ak-beginning-of-line-or-block ()
+  :jump t
   :type exclusive
   (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
     (if (= (point) first-nonblank)
@@ -386,16 +380,18 @@
       (dired-find-file)
       (shell-command (concat "open \"" file-path "\"")))))
 
-(defun ak-dired-opener (path &optional interactive)
+(defun ak-dired-opener (&optional path interactive)
   (interactive)
   (lambda () (interactive)
+    (unless path
+      (setq ppath default-directory))
     (when (= (count-windows) 1)
       (split-window-right))
     (other-window 1)
     (if interactive
-      (let ((default-directory path))
+      (let ((default-directory ppath))
         (call-interactively 'dired))
-      (dired path))))
+      (dired ppath))))
 
 (use-package all-the-icons-dired
   :after all-the-icons
@@ -484,6 +480,8 @@
     (forward-char 1))
   (newline))
 
+;;; copy-paste {{{
+
 (defun ak-yank ()
   (interactive)
   (kill-ring-save (region-beginning) (region-end)))
@@ -496,7 +494,7 @@
     (backward-char 1)
     (yank)
     ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
+    (indent-region (region-beginning) (+ (region-end) 2)))
   (back-to-indentation))
 
 (defun ak-paste-before-appending-2nl ()
@@ -769,7 +767,11 @@ Version 2016-11-22"
       (eval-buffer tbuf)
       (kill-buffer tbuf))))
 
-(advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
+(defun ak-kill-current-buffer ()
+  (interactive)
+  (kill-buffer (current-buffer)))
+
+;; (advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
 
 ;;; }}}
 ;;; compile {{{
@@ -801,6 +803,7 @@ Version 2016-11-22"
 (menu-bar-mode -1)
 (tool-bar-mode -1)
 (toggle-scroll-bar -1)
+;; (scroll-bar-mode -1)
 (setq frame-resize-pixelwise t)
 
 (set-face-attribute 'default nil :height 150)
@@ -833,8 +836,8 @@ Version 2016-11-22"
   ;; :box '(:color "deep pink" :line-width 2)
   )
 
-(add-to-list 'load-path "~/.emacs.d/hl-line+/")
-(require 'hl-line+)
+;; (add-to-list 'load-path "~/.emacs.d/hl-line+/")
+;; (require 'hl-line+)
 
 (require 'ansi-color)
 (setq ansi-color-names-vector
@@ -845,10 +848,11 @@ Version 2016-11-22"
   ansi-color-map (ansi-color-make-color-map))
 
 (setq evil-mode-line-format nil
-  evil-normal-state-cursor '(box "#00FFFF")
-  evil-emacs-state-cursor '(box "#FF0000")
-  evil-insert-state-cursor '(bar "#FF0000")
-  evil-visual-state-cursor '(box "#F86155"))
+  ;; evil-normal-state-cursor '(box "#00FFFF")
+  evil-emacs-state-cursor '(box "#00FFFF")
+  ;; evil-insert-state-cursor '(bar "#FF0000")
+  ;; evil-visual-state-cursor '(box "#F86155")
+  )
 
 (use-package all-the-icons
   :config
@@ -1024,9 +1028,12 @@ If no FONT-SIZE provided, reset the font size to its default variable."
     "t" (gkd 'transmission :timeout 0.5
           "t" (ak-find-file-home "Library/Application Support/transmission-daemon/settings.json"))
     "v" (ak-find-file-home "yd/cfg/vim/min.vim")
-    "e" (ak-find-file-home "yd/cfg/emacs/min.el")
+    "e"
+    (gkd (ak-find-file-home "yd/cfg/emacs/min.el") :timeout 0.5
+      "i" (ak-find-file-home "yd/cfg/emacs/init.el"))
     "q" (ak-find-file-home "yd/cfg/qmk_firmware/ak-first-keymap.c")
     "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
+    "w" (ak-find-file-home "yd/cfg/windows/start.ps1")
 
     "r" 'evil-goto-first-line
     "c" 'evil-goto-line
@@ -1061,7 +1068,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
     "g" 'magit-status
     ;; "g" 'preview-buffer
     ;; "w" 'aking/test
-    "w" 'ak/view-pdf
+    ;; "w" 'ak/view-pdf
     ;;"v" 'aking/view-pdf
     "h" 'avy-goto-word-1
     "n" 'avy-goto-line
@@ -1086,7 +1093,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
       "l" (gsk "C-c C-l")
       "e" (gsk "C-c `")
       "n" (gsk "C-c C-e")
-
       "s"
       (gkd 'aking/yas-latex :timeout 0.5
         "s" 'aking/yas-latex-script)
@@ -1124,10 +1130,12 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "h" nil
 
   "M-x"   '(lambda () (interactive) (counsel-M-x ""))
-  "C-x C-c" 'save-buffers-kill-emacs
-  "C-x C-j C-c" 'save-buffers-kill-terminal
+  "C-x C-j C-c" 'save-buffers-kill-emacs
+  ;; "C-x C-j C-c" 'save-buffers-kill-terminal
+  "C-x k" 'ak-kill-current-buffer
   "C-x b" 'ibuffer
   "C-x g" 'magit-status
+  "C-x z" 'magit-commit
   "C-x e" 'ak-eval-buffer
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
@@ -1138,7 +1146,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
   "C-x C-j k C-[" 'ak-switch-to-previous-buffer
 
-  "C-x C-j d" (ak-dired-opener default-directory)
+  "C-x C-j d" (ak-dired-opener)
   "C-x C-j D" 'ak-test
   "C-x C-j C-d" 'projectile-dired
   "C-x C-j M-d" (ak-dired-opener "~/yd")
@@ -1148,7 +1156,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j 0" 'ak-toggle-window-split
   "C-M-%" 'ak-query-replace-regexp-or-joker
   "C-x C-j p" 'ak-buffer-file-name
-  "s-C" 'ak-buffer-file-name
+  "C-S-c" 'ak-buffer-file-name
   "C-x C-j C-p" 'ak-default-directory
 
   ;; terminal
@@ -1209,7 +1217,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "z" 'evil-jump-item
   "}" (gsk "C-o")
   "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-  "%" 'ak-jump-item
+  ;; "%" 'ak-jump-item
   ")" 'ak-outline-next-heading
   "(" 'outline-previous-heading
   "-" 'outline-toggle-children
@@ -1243,12 +1251,14 @@ If no FONT-SIZE provided, reset the font size to its default variable."
         ">" (gsk "^ | >")
         "c" (gsk "^ | ,")
         "." (gsk "^ | ."))
-  "j" 'evil-yank
+  "j" 'ak-yank
   "y" 'evil-delete
   "k" 'ak-evil-erase-line
   "q" 'ak-evil-delete-char
+  "\\" 'evil-record-macro
   "K" 'evil-delete-backward-char
   ;; misc:
+  "C-S-u" 'upcase-word
   "'" 'evil-join
   "J" (gsk "a <return>")
   ;; folding:
@@ -1356,7 +1366,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
       "f" 'dired-prev-dirline
       "m" 'dired-mark
       "d" 'dired-flag-file-deletion
-      "C" 'dired-copy-file
+      "C" 'dired-do-copy
       "R" 'dired-do-rename
       "z" 'dired-up-directory
       "RET" 'ak-dired-find-file
