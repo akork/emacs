@@ -848,10 +848,10 @@ Version 2016-11-22"
   ansi-color-map (ansi-color-make-color-map))
 
 (setq evil-mode-line-format nil
-  ;; evil-normal-state-cursor '(box "#00FFFF")
+  evil-normal-state-cursor '(box "#FFFF00")
   evil-emacs-state-cursor '(box "#00FFFF")
-  ;; evil-insert-state-cursor '(bar "#FF0000")
-  ;; evil-visual-state-cursor '(box "#F86155")
+  evil-insert-state-cursor '(bar "#FFFF00")
+  evil-visual-state-cursor '(box "#F86155")
   )
 
 (use-package all-the-icons
