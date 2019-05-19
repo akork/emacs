@@ -446,24 +446,6 @@
       ;; (setq transient-mark-mode nil)
       (keyboard-quit))))
 
-(defun ak-yank-pop-forwards (arg)
-  (interactive "p")
-  (yank-pop (- arg)))
-
-(defun ak-duplicate ()
-  (interactive)
-  (if (region-active-p)
-    (progn
-      (kill-ring-save (region-beginning) (region-end))
-      (ak-paste-prepending-nl))
-    (progn
-      (move-beginning-of-line 1)
-      (kill-line)
-      (yank)
-      (open-line 1)
-      (next-line 1)
-      (yank))))
-
 (defun ak-select-from-lb ()
   (interactive)
   (set-mark (line-beginning-position))
@@ -480,71 +462,6 @@
     (forward-char 1))
   (newline))
 
-;;; copy-paste {{{
-
-(defun ak-yank ()
-  (interactive)
-  (kill-ring-save (region-beginning) (region-end)))
-
-(defun ak-paste-before-appending-nl ()
-  (interactive)
-  ;; (backward-char 1)
-  (insert "\n")
-  (save-excursion
-    (backward-char 1)
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (+ (region-end) 2)))
-  (back-to-indentation))
-
-(defun ak-paste-before-appending-2nl ()
-  (interactive)
-  (insert "\n\n")
-  (save-excursion
-    (backward-char 2)
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
-  (back-to-indentation))
-
-(defun ak-paste-after-prepending-nl ()
-  (interactive)
-  (if (and (boundp 'evil-state)
-        (eq evil-state 'normal))
-    (forward-char 1))
-  (insert "\n")
-  (save-excursion
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
-  (back-to-indentation))
-
-(defun ak-paste-after-prepending-2nl ()
-  (interactive)
-  (if (and (boundp 'evil-state)
-        (eq evil-state 'normal))
-    (forward-char 1))
-  (insert "\n\n")
-  (save-excursion
-    (yank)
-    ;; (evil-paste-before 1)
-    (indent-region (region-beginning) (region-end)))
-  (back-to-indentation))
-
-(defun ak-duplicate-region-after ()
-  (interactive)
-  (if (eq evil-state 'normal)
-    (kill-ring-save (region-beginning) (1+ (region-end)))
-    (kill-ring-save (region-beginning) (region-end)))
-  (ak-paste-after-prepending-nl))
-
-(defun ak-duplicate-after ()
-  (interactive)
-  (if (not (region-active-p))
-    (set-mark (line-beginning-position)))
-  (ak-duplicate-region-after))
-
-(global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
 (defun ak-org-edit-src ()
   (interactive)
@@ -771,7 +688,99 @@ Version 2016-11-22"
   (interactive)
   (kill-buffer (current-buffer)))
 
+(defun ak-out-forward-and-eval ()
+  (interactive)
+  (save-excursion
+    (lispy--out-forward 1)
+    (eval-last-sexp nil)))
+
 ;; (advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
+
+;;; }}}
+
+;;; copy-paste {{{
+
+(defun ak-yank-pop-forwards (arg)
+  (interactive "p")
+  (yank-pop (- arg)))
+
+(defun ak-duplicate ()
+  (interactive)
+  (if (region-active-p)
+    (progn
+      (kill-ring-save (region-beginning) (region-end))
+      (ak-paste-prepending-nl))
+    (progn
+      (move-beginning-of-line 1)
+      (kill-line)
+      (yank)
+      (open-line 1)
+      (next-line 1)
+      (yank))))
+
+(defun ak-yank ()
+  (interactive)
+  (kill-ring-save (region-beginning) (region-end)))
+
+(defun ak-paste-before-appending-nl ()
+  (interactive)
+  ;; (backward-char 1)
+  (insert "\n")
+  (save-excursion
+    (backward-char 1)
+    (yank)
+    ;; (evil-paste-before 1)
+    (indent-region (region-beginning) (+ (region-end) 2)))
+  (back-to-indentation))
+
+(defun ak-paste-before-appending-2nl ()
+  (interactive)
+  (insert "\n\n")
+  (save-excursion
+    (backward-char 2)
+    (yank)
+    ;; (evil-paste-before 1)
+    (indent-region (region-beginning) (region-end)))
+  (back-to-indentation))
+
+(defun ak-paste-after-prepending-nl ()
+  (interactive)
+  (if (and (boundp 'evil-state)
+        (eq evil-state 'normal))
+    (forward-char 1))
+  (insert "\n")
+  (save-excursion
+    (yank)
+    ;; (evil-paste-before 1)
+    (indent-region (region-beginning) (region-end)))
+  (back-to-indentation))
+
+(defun ak-paste-after-prepending-2nl ()
+  (interactive)
+  (if (and (boundp 'evil-state)
+        (eq evil-state 'normal))
+    (forward-char 1))
+  (insert "\n\n")
+  (save-excursion
+    (yank)
+    ;; (evil-paste-before 1)
+    (indent-region (region-beginning) (region-end)))
+  (back-to-indentation))
+
+(defun ak-duplicate-region-after ()
+  (interactive)
+  (if (eq evil-state 'normal)
+    (kill-ring-save (region-beginning) (1+ (region-end)))
+    (kill-ring-save (region-beginning) (region-end)))
+  (ak-paste-after-prepending-nl))
+
+(defun ak-duplicate-after ()
+  (interactive)
+  (if (not (region-active-p))
+    (set-mark (line-beginning-position)))
+  (ak-duplicate-region-after))
+
+(global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
 ;;; }}}
 ;;; compile {{{
@@ -1035,6 +1044,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
     "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
     "w" (ak-find-file-home "yd/cfg/windows/start.ps1")
 
+    "l" 'ak-out-forward-and-eval
     "r" 'evil-goto-first-line
     "c" 'evil-goto-line
     ;; "e"
@@ -1192,7 +1202,12 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;; ----------------------------------------------------------------------------
 
 (gdk :states '(motion normal visual operator)
-  "RET" 'ak-newline
+  ;; experimental:
+  "o" 'evil-append
+  "O" 'evil-append-line
+  "i" 'evil-insert
+  "I" 'evil-insert-line
+  "l" 'evil-open-below
   ;; basic movement:
   "t" 'evil-forward-char
   "m" 'evil-backward-char
@@ -1223,12 +1238,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "-" 'outline-toggle-children
   ;; visual:
   "_" 'evil-visual-char
-  "l" (gsk "0 _ $ m")
+  ;; "l" (gsk "0 _ $ m")
   "H" 'evil-visual-line
   ;; yank/paste:
-  "y" 'ak-yank
-  ;; "b" 'evil-paste-after
-  ;; "B" 'evil-paste-before
   "w" 'ak-paste-after-prepending-nl
   "W" 'ak-paste-before-appending-nl
   "v" 'ak-paste-after-prepending-2nl
@@ -1252,7 +1264,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
         "c" (gsk "^ | ,")
         "." (gsk "^ | ."))
   "j" 'ak-yank
-  "y" 'evil-delete
+  "a" 'evil-delete
   "k" 'ak-evil-erase-line
   "q" 'ak-evil-delete-char
   "\\" 'evil-record-macro
@@ -1265,7 +1277,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "x" nil
   "x r" 'outline-show-all
   "x a" 'outline-show-subtree
-  "TAB" 'outline-toggle-children
+  "<return>" 'outline-toggle-children
   "x m" 'outline-hide-body)
 
 (gdk :states '(motion normal)
