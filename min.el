@@ -264,10 +264,11 @@
                        (magit-popup-mode . emacs)))
     (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
+
 (evil-define-command ak-current-file-name ()
   "Copy the current buffer-file-name to the clipboard."
   (let ((filename (if (equal major-mode 'dired-mode)
-                    default-directory
+                      default-directory
                     (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
