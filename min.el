@@ -3,8 +3,8 @@
 
 ;;; help {{{
 
-;; minor (bound-and-true-p yas-minor-mode)
-;; major (derived-mode-p 'json-mode 'emacs-lisp-)
+;; minor (bound-and-true-p yas-minor-mode) or major-mode-list variable
+;; major (derived-mode-p 'json-mode 'emacs-lisp-) or major-mode variable
 
 ;; (string= evil-state "normal")
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue
@@ -264,11 +264,13 @@
                        (magit-popup-mode . emacs)))
     (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
+(add-hook 'git-commit-mode-hook
+  (lambda () (evil-insert-state 1)))
 
 (evil-define-command ak-current-file-name ()
   "Copy the current buffer-file-name to the clipboard."
   (let ((filename (if (equal major-mode 'dired-mode)
-                      default-directory
+                    default-directory
                     (buffer-file-name))))
     (when filename
       (setq select-enable-clipboard t)
