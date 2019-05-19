@@ -1202,12 +1202,16 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;; ----------------------------------------------------------------------------
 
 (gdk :states '(motion normal visual operator)
-  ;; experimental:
+  ;; state altering:
   "o" 'evil-append
   "O" 'evil-append-line
   "i" 'evil-insert
   "I" 'evil-insert-line
   "l" 'evil-open-below
+  ;; visual:
+  "_" 'evil-visual-char
+  "." (gsk "0 _ $ m")
+  "H" 'evil-visual-line
   ;; basic movement:
   "t" 'evil-forward-char
   "m" 'evil-backward-char
@@ -1236,10 +1240,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   ")" 'ak-outline-next-heading
   "(" 'outline-previous-heading
   "-" 'outline-toggle-children
-  ;; visual:
-  "_" 'evil-visual-char
-  ;; "l" (gsk "0 _ $ m")
-  "H" 'evil-visual-line
   ;; yank/paste:
   "w" 'ak-paste-after-prepending-nl
   "W" 'ak-paste-before-appending-nl
