@@ -707,6 +707,12 @@ Version 2016-11-22"
     (lispy--out-forward 1)
     (eval-last-sexp nil)))
 
+(defun ak-stage-and-commit ()
+  (interactive)
+  (save-buffer)
+  (magit-stage-modified)
+  (magit-commit-create))
+
 ;; (advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
 
 ;;; }}}
@@ -1158,7 +1164,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x k" 'ak-kill-current-buffer
   "C-x b" 'ibuffer
   "C-x g" 'magit-status
-  "C-x z" 'magit-commit
+  "C-x z" 'ak-stage-and-commit
   "C-x e" 'ak-eval-buffer
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
