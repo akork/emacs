@@ -10,6 +10,7 @@
 ;; (local-set-key "\C-w" 'ak-time) ; map <buffer> vim analogue
 ;; S - shift, s - super
 ;; m-o action selection in counsel-mx
+;; git rebase -i HEAD~2
 
 ;;; }}}
 ;;; PATH set {{{
