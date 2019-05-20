@@ -12,6 +12,16 @@
 ;; m-o action selection in counsel-mx
 
 ;;; }}}
+;;; PATH set {{{
+
+(let ((path (shell-command-to-string "echo -n $PATH")))
+  (setenv "PATH" path)
+  (setq exec-path
+    (append
+      (split-string-and-unquote path ":")
+      exec-path)))
+
+;;; }}}
 ;;; before init {{{
 
 (setq ak-home "/Users/AK/")
