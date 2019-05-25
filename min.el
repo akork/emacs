@@ -15,7 +15,9 @@
 ;;; }}}
 ;;; PATH set {{{
 
-(let ((path (shell-command-to-string "echo -n $PATH")))
+(setenv "SHELL" "/usr/local/bin/bash")
+
+(let ((path (shell-command-to-string "bash --login -i 'echo -n $PATH'")))
   (setenv "PATH" path)
   (setq exec-path
     (append
@@ -64,6 +66,9 @@
 ;;; }}}
 ;;; packages {{{
 (ak-log "packages")
+
+(use-package exec-path-from-shell)
+(exec-path-from-shell-initialize)
 
 (use-package counsel)                   ; counsel-mx
 (use-package general)
@@ -1414,14 +1419,16 @@ If no FONT-SIZE provided, reset the font size to its default variable."
     (evil-define-key
       'normal dired-mode-map "r" 'dired-previous-line)))
 
-(add-hook 'magit-status-mode-hook
-  (lambda ()
-    (gdk
-      :keymaps 'magit-status-mode-map
-      "C-x g" 'magit-commit-popup
-      ")" 'magit-commit-popup
-      "c" 'magit-section-forward
-      "r" 'magit-section-backward)))
+;; (add-hook 'magit-status-mode-hook
+;;   (lambda ()
+;;     (gdk
+;;       :keymaps 'magit-status-mode-map
+;;       "C-x g" 'magit-commit-popup
+;;       "(" 'magit-commit-popup
+;;       "," 'magit-rebase-popup
+;;       "c" 'magit-section-forward
+;;       "r" 'magit-section-backward
+;;       )))
 
 (add-hook 'ibuffer-mode-hook
   (lambda ()
@@ -1436,6 +1443,12 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 (gdk :keymaps 'package-menu-mode-map
   :states 'emacs
   "r" 'previous-line)
+
+;; (add-hook 'magit-popup-mode-hook
+;;   (lambda ()
+;;     (gdk :keymaps 'magit-popup-mode-map
+;;       :states 'emacs
+;;       "r" 'ak-time)))
 
 ;; (evil-global-set-key 'normal "r" 'evil-previous-line)
 
