@@ -257,7 +257,7 @@
   (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
   (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
   (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
-  (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
+  ;; (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
   (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map))
   (eval-after-load "package" '(evil-make-overriding-map package-menu-mode-map))
   (eval-after-load "diff-mode" '(evil-make-overriding-map diff-mode-map))
@@ -1355,6 +1355,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   ;; (evil-set-initial-state 'transmission-mode 'emacs)
   :general
   (:states 'emacs
+    :keymaps 'transmission-mode-map
     "c" 'next-line
     "r" 'previous-line))
 
