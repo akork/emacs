@@ -1303,7 +1303,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "x" nil
   "x r" 'outline-show-all
   "x a" 'outline-show-subtree
-  "<return>" 'outline-toggle-children
+  "<tab>" 'outline-toggle-children
   "x m" 'outline-hide-body)
 
 (gdk :states '(motion normal)
