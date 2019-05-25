@@ -1023,8 +1023,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 (use-package editorconfig
   :demand t
   :config
-  (advice-add 'editorconfig-format-buffer :before 'outline-show-all)
-  (advice-add 'editorconfig-format-buffer :after 'outline-hide-other))
+  ;; (advice-add 'editorconfig-format-buffer :before 'outline-show-all)
+  ;; (advice-add 'editorconfig-format-buffer :after 'outline-hide-other)
+  )
 
 ;;; }}}
 ;;; general config {{{
