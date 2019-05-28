@@ -920,6 +920,13 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   (advice-add
     #'company-box-frontend :override #'vj/company-box-frontend-even-if-single))
 
+;; disables scroll bars on new frames
+(defun ak-disable-scroll-bars (frame)
+  (modify-frame-parameters frame
+    '((vertical-scroll-bars . nil)
+       (horizontal-scroll-bars . nil))))
+(add-hook 'after-make-frame-functions 'ak-disable-scroll-bars)
+
 ;;; }}}
 ;;; frame title {{{
 
