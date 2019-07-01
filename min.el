@@ -667,6 +667,13 @@ Repeated invocations toggle between the two most recently open buffers."
   (magit-stage-modified)
   (magit-commit-create))
 
+(defun start-named-server (name)
+  (let ((server-name name))
+    (server-start)))
+
+;; (load "server")
+;; (unless (server-running-p) (start-named-server "main"))
+
 ;; (advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
 
 ;;; }}}
