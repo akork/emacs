@@ -84,8 +84,8 @@
 
 (use-package meghanada)
 
-;; (use-package magit
-;;   :commands (magit-status))
+(use-package magit
+  :commands (magit-status))
 
 ;; (use-package smex)
 
