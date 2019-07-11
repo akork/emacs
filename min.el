@@ -1158,9 +1158,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "M-<f12>" 'ak-eshell-other-window
   "C-x C-j 0" 'ak-toggle-window-split
   "C-M-%" 'ak-query-replace-regexp-or-joker
-  "C-x p" 'ak-buffer-file-name
+  "C-x C-p" 'ak-buffer-file-name
   "C-S-c" 'ak-buffer-file-name
-  "C-x C-p" 'ak-default-directory
+  "C-x p" 'ak-default-directory
 
   ;; terminal
   "M-:" 'eval-expression
@@ -1187,8 +1187,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "M-s-g" 'ak-generate-makefile
   "C-M-i" 'evil-jump-item
   "M-s-g" 'ak-generate-makefile
-  "C-M-i" 'evil-jump-item
-  "C-M-e" 'er/expand-region)
+  "C-M-e" 'er/expand-region
+  "s-<backspace>" 'ak-kill-line-0)
 
 ;; ----------------------------------------------------------------------------
 ;; motion keymap
@@ -1240,7 +1240,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "v" 'ak-paste-after-prepending-2nl
   "V" 'ak-paste-before-appending-2nl
   ;; delete/change:
-  "s-<backspace>" 'ak-kill-line-0
   "^" 'evil-change
   "e" (gkd 'evil-change :timeout 1
 		   "r" (gsk "^ i \"")
