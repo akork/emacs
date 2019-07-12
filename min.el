@@ -1188,7 +1188,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-M-i" 'evil-jump-item
   "M-s-g" 'ak-generate-makefile
   "C-M-e" 'er/expand-region
-  "s-<backspace>" 'ak-kill-line-0)
+  "s-<backspace>" 'ak-kill-line-0
+  "s-z" 'undo-tree-undo)
 
 ;; ----------------------------------------------------------------------------
 ;; motion keymap
