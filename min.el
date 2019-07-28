@@ -675,6 +675,11 @@ Repeated invocations toggle between the two most recently open buffers."
   (interactive)
   (kill-line 0))
 
+(defun ak-evil-yank ()
+  (interactive)
+  (save-excursion
+	(call-interactively 'evil-yank)))
+
 ;; (load "server")
 ;; (unless (server-running-p) (start-named-server "main"))
 
@@ -1259,6 +1264,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 		   "c" (gsk "^ | ,")
 		   "." (gsk "^ | ."))
   "j" 'ak-yank
+  "y" 'ak-evil-yank
   "a" 'evil-delete
   "k" 'ak-evil-erase-line
   "q" 'ak-evil-delete-char
