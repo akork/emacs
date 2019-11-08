@@ -13,10 +13,15 @@
 ;; git rebase -i HEAD~2
 ;; M-. lispy-goto-symbol
 
+;; evil-define-interactive evil-operator-range evil-read-motion evil-motion-range
+
+;; C-x C-h - show all keybindings starting with C-x
+
 ;;; }}}
 ;;; PATH set {{{
 
 (setenv "SHELL" "/usr/local/bin/bash")
+(setenv "LANG" "") 						;for lualatex
 
 ;;; }}}
 ;;; before init {{{
@@ -67,13 +72,13 @@
 
 (use-package counsel)                   ; counsel-mx
 (use-package general)
-(use-package ace-window
-  :config
-  (setq aw-keys '(?d ?c ?r ?t ?n ?s))
-  :general
-  (:states '(normal visual motion insert emacs)
-		   "C-x o" 'ace-window)
-  ("C-x o" 'ace-window))
+;; (use-package ace-window
+;;   :config
+;;   (setq aw-keys '(?d ?c ?r ?t ?n ?s))
+;;   :general
+;;   (:states '(normal visual motion insert emacs)
+;; 		   "C-x o" 'ace-window)
+;;   ("C-x o" 'ace-window))
 
 (use-package lispy)
 (use-package persistent-overlays
@@ -86,6 +91,20 @@
 
 (use-package magit
   :commands (magit-status))
+
+(use-package lua-mode)
+(use-package smex)
+
+(use-package ein)
+(use-package move-text)
+
+(use-package helm)
+
+(use-package jedi)
+;; (use-package auctex)
+(use-package yasnippet)
+(use-package yasnippet-snippets)
+(setq yas-snippet-dirs '("~/.emacs.d/snippets"))
 
 ;; (use-package smex)
 
@@ -201,6 +220,30 @@
 (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'default-frame-alist '(ns-appearance . dark))
 (pixel-scroll-mode)
+
+(setq c-default-style "linux"
+	  c-basic-offset 4)
+
+(recentf-mode 1)
+
+(setq compilation-scroll-output t)
+
+(defun slick-cut (beg end)
+  (interactive
+   (if mark-active
+       (list (region-beginning) (region-end))
+     (list (line-beginning-position) (line-beginning-position 2)))))
+
+(advice-add 'kill-region :before #'slick-cut)
+
+(defun slick-copy (beg end)
+  (interactive
+   (if mark-active
+       (list (region-beginning) (region-end))
+     (message "Copied line")
+     (list (line-beginning-position) (line-beginning-position 2)))))
+
+(advice-add 'kill-ring-save :before #'slick-copy)
 
 ;; }}}
 ;;; overriding keymap {{{
@@ -394,14 +437,15 @@
 		(dired-find-file)
       (shell-command (concat "open \"" file-path "\"")))))
 
-(defun ak-dired-opener (&optional path interactive)
+(defun ak-dired-opener (&optional path samewindow interactive)
   (interactive)
   (lambda () (interactive)
     (unless path
       (setq ppath default-directory))
-    (when (= (count-windows) 1)
-      (split-window-right))
-    (other-window 1)
+	(unless samewindow
+      (when (= (count-windows) 1)
+		(split-window-right))
+      (other-window 1))
     (if interactive
 		(let ((default-directory ppath))
 		  (call-interactively 'dired))
@@ -425,7 +469,8 @@
 
 (defun ak-test ()
   (interactive)
-  (funcall (intern "ak-time")))
+  (funcall (intern "ak-time"))
+  (message (point)))
 
 (advice-add #'other-window
 			:after (lambda (a &optional b) (interactive "p") (ignore-errors (abort-recursive-edit))))
@@ -673,12 +718,43 @@ Repeated invocations toggle between the two most recently open buffers."
 
 (defun ak-kill-line-0 ()
   (interactive)
-  (kill-line 0))
+  (kill-line 0)
+  (backward-delete-char 1))
 
 (defun ak-evil-yank ()
   (interactive)
   (save-excursion
 	(call-interactively 'evil-yank)))
+
+(defun ak-format-buffer ()
+  "Format C++ code with astyle."
+  (interactive)
+  (let ((p (point)))
+	(let (beg end)
+      (if (region-active-p)
+          (setq beg (region-beginning)
+				end (region-end))
+		(setq beg (point-min)
+              end (point-max)))
+      (shell-command-on-region
+       beg end
+	   ;; "astyle --style=otbs --indent=spaces=4 -U --pad-oper --add-brackets -k3"
+	   "clang-format"
+       nil t)
+	  (if (< (point-max) p)
+		  (goto-char (point-max))
+		(goto-char p)))))
+
+(defun ak-upcase-previous-WORD ()
+  (interactive)
+  (set-mark (point))
+  (forward-whitespace -1)
+  (call-interactively
+   'upcase-region)
+  (setq mark-active t)
+  (exchange-point-and-mark)
+  (setq deactivate-mark NIL)
+  (run-with-timer 0.1 nil (lambda () (setq mark-active nil))))
 
 ;; (load "server")
 ;; (unless (server-running-p) (start-named-server "main"))
@@ -686,6 +762,136 @@ Repeated invocations toggle between the two most recently open buffers."
 ;; (advice-add 'comment-line :around 'ak-outline-show-all--wrapper)
 
 ;;; }}}
+
+
+;;;; YAS FUNCTIONS {{{
+
+(defun aking/yas-expand-or-self-insert ()
+  "Try to expand a snippet at a key before point.
+Otherwise insert space"
+  (interactive)
+  (if (bound-and-true-p yas-minor-mode)
+      (progn (if yas-triggers-in-field
+                 (let ((yas-fallback-behavior 'return-nil)
+                       )
+                   (unless (yas-expand)
+                     (progn (message (current-time-string))
+                            (self-insert-command 1))))
+               ))
+    (self-insert-command 1)
+    )
+  )
+
+(defun aking/yas-reload ()
+  (interactive)
+  (evil-write-all nil)
+  (shell-command (concat "cd " dot-path "/snippets/ && ./yas-latex.pl"))
+  (yas-reload-all))
+
+(defun aking/yas-latex ()
+  (interactive)
+  (find-file (concat dot-path "/snippets/snip-latex")))
+
+(defun aking/yas-latex-script ()
+  (interactive)
+  (find-file (concat dot-path "/snippets/yas-latex.pl")))
+
+(defun aking/LaTeX-environment ()
+  (interactive)
+  (let ((environment (LaTeX-current-environment 1)))
+    (message environment)))
+
+
+;; +++++++++++++++++++++++++++++++++++++++++++
+(defun aking/test ()
+  (interactive)
+  (save-excursion
+    (if  (search-backward "test" (- (point) (length "test")) t)
+        (message "found")
+      (message "not found"))))
+
+(setq aking/latex-snippets '("ar" "un" "ob" "on" "sq" "ti" "hi"))
+
+(defun aking/expand (string)
+  (let ((len (length string)))
+    (if (save-excursion (search-backward string (- (point) len) t))
+        (progn (delete-backward-char len)
+               (yas-expand-snippet (yas-lookup-snippet (concat string "_t"))))
+      nil)))
+
+(defun aking/expand-all (list)
+  (loop for string in list do
+        (when (aking/expand string)
+          (return))))
+
+(defun aking/self-insert-or-expand ()
+  (interactive)
+  (self-insert-command 1)
+  (and (derived-mode-p 'latex-mode)
+       (texmathp)
+       (aking/expand-all aking/latex-snippets)))
+
+(defun aking/yas-next-field ()
+  (interactive)
+  (yas-next-field))
+
+(defun aking/latex-math-mode ()
+  "key: m"
+  (interactive)
+  (unless (texmathp)
+    (progn  (yas-expand-snippet (yas-lookup-snippet "mathm"))
+            (aking//toggle-off-input-method))))
+
+(defun aking/LaTeX-new-equation ()
+  (interactive)
+  (if (or (string= (LaTeX-current-environment 1) "equation*") (string= (LaTeX-current-environment 1) "equation"))
+      (progn (preview-environment 0)
+             (LaTeX-find-matching-end)
+             (newline)
+             (yas-expand-snippet (yas-lookup-snippet "ens")))
+    (progn (LaTeX-indent-line)
+      ;; (reindent-then-newline-and-indent)
+      (yas-expand-snippet (yas-lookup-snippet "ens")))))
+
+(defun aking/latex-convert-to-big ()
+  (interactive)
+  (re-search-backward "\\\\(")
+  (kill-region (point) (+ (point) 2))
+  (insert "\n\\begin{equation*}\n")
+  (re-search-forward "\\\\)")
+  (kill-region (point) (+ (point) -2))
+  (insert "\n\\end{equation*}\n"))
+
+;; +++++++++++++++++++++++++++++++++++++++++++
+
+
+
+(defun aking/match-latex-math-end ()
+  (interactive)
+  (re-search-forward "\\\\)"))
+
+(defun LaTeX-delete-environment ()
+  (interactive)
+  (when (LaTeX-current-environment)
+    (save-excursion
+      (let* ((begin-start (save-excursion
+                            (LaTeX-find-matching-begin)
+                            (point)))
+             (begin-end (save-excursion
+                          (goto-char begin-start)
+                          (search-forward-regexp "begin{.*?}")))
+             (end-end (save-excursion
+                        (LaTeX-find-matching-end)
+                        (point)))
+             (end-start (save-excursion
+                          (goto-char end-end)
+                          (1- (search-backward-regexp "\\end")))))
+        ;; delete end first since if we delete begin first it shifts the
+        ;; location of end
+        (delete-region end-start end-end)
+        (delete-region begin-start begin-end)))))
+
+;; }}}
 
 ;;; copy-paste {{{
 
@@ -794,6 +1000,7 @@ Repeated invocations toggle between the two most recently open buffers."
   (spacemacs-theme-comment-bg nil)
   (spacemacs-theme-comment-italic t))
 
+(load-theme 'spacemacs-light t)
 (load-theme 'spacemacs-dark t)
 
 (message (concat "after theme: " (current-time-string)))
@@ -848,7 +1055,7 @@ Repeated invocations toggle between the two most recently open buffers."
 (setq evil-mode-line-format nil
 	  evil-normal-state-cursor '(box "#FFFF00")
 	  evil-emacs-state-cursor '(box "#00FFFF")
-	  evil-insert-state-cursor '(bar "#FFFF00")
+	  evil-insert-state-cursor '(box "#FF00FF")
 	  evil-visual-state-cursor '(box "#F86155")
 	  )
 
@@ -1041,6 +1248,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 	   "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
 	   "w" (ak-find-file-home "yd/cfg/windows/start.ps1")
 	   "m" (ak-find-file-home "yd/cfg/macos/init.sh")
+	   "h" (ak-find-file-home ".hammerspoon/init.lua")
 
 	   "l" 'ak-out-forward-and-eval
 	   "r" 'evil-goto-first-line
@@ -1066,7 +1274,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 	   (gkd  '(lambda () (interactive)
 				;; (aking/view-pdf)
 				(aking/compile-project)
-				)
+			)
 		 :timeout 0.5
 		 "c" '(lambda () (interactive)
 				(aking/view-pdf)
@@ -1074,11 +1282,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 				(preview-buffer)))
 	   ;; "g" 'helm-projectile-grep
 	   "g" 'magit-status
-	   ;; "g" 'preview-buffer
-	   ;; "w" 'aking/test
-	   ;; "w" 'ak/view-pdf
-	   ;;"v" 'aking/view-pdf
-	   "h" 'avy-goto-word-1
 	   "n" 'avy-goto-line
 	   "o"
 	   (gkd 'aking/dired-home :timeout 0.5
@@ -1126,8 +1329,14 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 
 ;; (define-key key-translation-map (kbd "C-x D") nil)
 
-(gdk :states '(motion normal visual operator insert emacs)
-  "C-k" nil                             ; kill-line restore
+;; (define-key minibuffer-local-map (kbd "s-<backspace>") 'ak-kill-line-0)
+
+;; (gdk :keymaps 'minibuffer-local-map
+;;   "s-<backspace>" 'ak-kill-line-0)
+
+;; free some keybindings from evil-map for default bindings in underlying modes 
+(gdk :states  '(motion normal visual operator insert emacs)
+  "C-k" nil								; kill-line restore
   "C-a" nil
   "C-e" nil
   "C-z" nil
@@ -1136,7 +1345,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-f" nil
   "C-b" nil
   "h" nil
+  )
 
+(gdk :keymaps 'override ;; :states  '(motion normal visual operator insert emacs)
   "M-x"   '(lambda () (interactive) (counsel-M-x ""))
   "C-x C-j C-c" 'save-buffers-kill-emacs
   ;; "C-x C-j C-c" 'save-buffers-kill-terminal
@@ -1147,16 +1358,15 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x e" 'ak-eval-buffer
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
+  "s-/" 'comment-line
   "C-x f" 'projectile-find-file
-  "s-<f10>" 'ak-compile
-  "C-x C-j C-b" 'ak-compile
   "C-x C-j i" 'kill-compilation
   "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
   "C-x C-j k C-[" 'ak-switch-to-previous-buffer
 
   "C-x C-j d" (ak-dired-opener)
-  "C-x C-j D" 'ak-test
-  "C-x C-j C-d" 'projectile-dired
+  "C-x C-j C-d" (ak-dired-opener nil t)
+  "C-x C-j D" 'projectile-dired
   "C-x C-j M-d" (ak-dired-opener "~/yd")
   "C-x C-j s-d" (ak-dired-opener "~/yd")
 
@@ -1166,7 +1376,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-p" 'ak-buffer-file-name
   "C-S-c" 'ak-buffer-file-name
   "C-x p" 'ak-default-directory
-
+  
   ;; terminal
   "M-:" 'eval-expression
   "C-x o" 'other-window
@@ -1179,22 +1389,42 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "M-a" 'move-beginning-of-line
   "C-c C-y" 'ak-paste-after-prepending-nl
   "C-Y" 'ak-paste-after-prepending-2nl
-  "S-<f10>" 'recompile
   ;; "C-f" 'projectile-find-file
-  "C-d" 'ak-duplicate-after
+  "s-d" 'ak-duplicate-after
   "C-M-S-t" 'mode-line-other-buffer
   "s-<return>" 'ak-make
   "M-s-g" 'ak-generate-makefile
   "C-M-i" 'evil-jump-item
   ;;    :predicate '(not (derived-mode-p 'term-mode))
-  "M-<right>" 'forward-word
-  "M-<left>" 'evil-backward-word-begin
   "M-s-g" 'ak-generate-makefile
   "C-M-i" 'evil-jump-item
   "M-s-g" 'ak-generate-makefile
   "C-M-e" 'er/expand-region
+  "s-C-<up>" 'move-text-up
+  "s-C-<down>" 'move-text-down
+
+  ;; macos
+  "M-<right>" 'forward-word
+  "M-<left>" 'evil-backward-word-begin
   "s-<backspace>" 'ak-kill-line-0
-  "s-z" 'undo-tree-undo)
+  "s-z" 'undo-tree-undo
+  
+  ;; idea
+  "s-x" 'kill-region
+  "s-c" 'kill-ring-save
+  "S-<f10>" 'ak-compile
+  "M-S-<f10>" 'compile
+  "<f2>" 'next-error
+  "M-s-l" 'ak-format-buffer
+  
+  "C-x z" 'counsel-recentf
+
+  ;; sublime
+  "s-D" 'ak-duplicate-after
+  "C-S-k" 'kill-whole-line
+  "M-u" 'ak-upcase-previous-WORD
+  "C-k" 'kill-line
+  )
 
 ;; ----------------------------------------------------------------------------
 ;; motion keymap
@@ -1204,8 +1434,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   ;; state altering:
   "o" 'evil-append
   "O" 'evil-append-line
-  "i" 'evil-insert
-  "I" 'evil-insert-line
+  ;; "i" 'evil-insert
+  ;; "I" 'evil-insert-line
   "l" 'evil-open-below
   "L" 'evil-open-above
   ;; visual:
@@ -1383,6 +1613,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 			  "C" 'dired-do-copy
 			  "R" 'dired-do-rename
 			  "z" 'dired-up-directory
+			  "l" 'dired-up-directory
 			  "RET" 'ak-dired-find-file
 			  "<mouse-1>" 'ak-dired-find-file
 			  "<mouse-2>" 'dired-find-file
@@ -1415,7 +1646,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 			  "c" 'ibuffer-forward-line
 			  "r" 'ibuffer-backward-line
 			  "g" 'ibuffer-forward-filter-group
-			  "f" 'ibuffer-backward-filter-group)))
+			  "f" 'ibuffer-backward-filter-group
+			  "a" 'ibuffer-visit-buffer)))
 
 (gdk :keymaps 'package-menu-mode-map
   :states 'emacs
