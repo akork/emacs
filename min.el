@@ -1,5 +1,4 @@
 ;;; -*- lexical-binding: t -*-
-;;; -*- enable-recursive-minibuffers: t -*-
 
 ;;; help {{{
 
@@ -17,15 +16,20 @@
 
 ;; C-x C-h - show all keybindings starting with C-x
 
+;;  (funcall 'f args) == (eval '(f args))
+;; ?_ -- symbol "_"
+
 ;;; }}}
 ;;; PATH set {{{
 
-(setenv "SHELL" "/usr/local/bin/bash")
-(setenv "LANG" "") 						;for lualatex
+;; (setenv "SHELL" "/usr/local/bin/bash")
+;; (setenv "LANG" "") 						;for lualatex
 
 ;;; }}}
 ;;; before init {{{
 
+;; (setq lexical-binding t)
+(setq enable-recursive-minibuffers t)
 (setq ak-home "/Users/AK/")
 (setq-default explicit-shell-file-name "/usr/local/bin/bash")
 
@@ -70,15 +74,7 @@
   :config
   (exec-path-from-shell-initialize))
 
-(use-package counsel)                   ; counsel-mx
-(use-package general)
-;; (use-package ace-window
-;;   :config
-;;   (setq aw-keys '(?d ?c ?r ?t ?n ?s))
-;;   :general
-;;   (:states '(normal visual motion insert emacs)
-;; 		   "C-x o" 'ace-window)
-;;   ("C-x o" 'ace-window))
+(use-package counsel)                   ; counsel-mxOA
 
 (use-package lispy)
 (use-package persistent-overlays
@@ -105,6 +101,16 @@
 (use-package yasnippet)
 (use-package yasnippet-snippets)
 (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+
+(use-package evil-numbers)
+
+(use-package ag)
+
+(use-package ranger)
+(use-package dired-du)
+(use-package dired-quick-sort)
+
+(use-package undo-tree)
 
 ;; (use-package smex)
 
@@ -226,7 +232,7 @@
 
 (recentf-mode 1)
 
-(setq compilation-scroll-output t)
+(setq compilation-scroll-output 'first-error)
 
 (defun slick-cut (beg end)
   (interactive
@@ -244,6 +250,8 @@
      (list (line-beginning-position) (line-beginning-position 2)))))
 
 (advice-add 'kill-ring-save :before #'slick-copy)
+
+(setq subword-mode t)
 
 ;; }}}
 ;;; overriding keymap {{{
@@ -287,99 +295,99 @@
 
 (message "before evil")
 
-(use-package evil
-  :config
-  (setq evil-cross-lines nil)
-  (evil-mode 1)
-  (eval-after-load "ibuf-ext" '(evil-make-overriding-map ibuffer-mode-map))
-  (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
-  (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
-  (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
-  ;; (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
-  (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map))
-  (eval-after-load "package" '(evil-make-overriding-map package-menu-mode-map))
-  (eval-after-load "diff-mode" '(evil-make-overriding-map diff-mode-map))
-  (eval-after-load "compilation-mode" '(evil-make-overriding-map compilation-mode-map))
-  (eval-after-load "eshell-mode" '(evil-make-overriding-map eshell-mode-map))
-  (dolist (mode-map '((comint-mode . insert)
-					  (with-editor-mode . insert)
-					  (term-mode . insert)
-					  (eshell-mode . insert)
-					  (help-mode . emacs)
-					  (fundamental-mode . normal)
-					  (transmission-mode . emacs)
-					  (transmission-files-mode . emacs)
-					  (message-buffer-mode . emacs)
-					  (dired-mode . emacs)
-					  (undo-tree-visualizer-mode . emacs)
-					  (compilation-mode . emacs)
-					  (magit-mode . emacs)
-					  (magit-log-mode . emacs)
-					  (magit-popup-mode . emacs)))
-    (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
+;; (use-package evil
+;;   :config
+;;   (setq evil-cross-lines nil)
+;;   (evil-mode 1)
+;;   (eval-after-load "ibuf-ext" '(evil-make-overriding-map ibuffer-mode-map))
+;;   (eval-after-load "debug" '(evil-make-overriding-map debugger-mode-map))
+;;   (eval-after-load "help" '(evil-make-overriding-map help-mode-map))
+;;   (eval-after-load "magit" '(evil-make-overriding-map magit-mode-map))
+;;   ;; (eval-after-load "magit-popup" '(evil-make-overriding-map magit-popup-mode-map))
+;;   (eval-after-load "magit-log" '(evil-make-overriding-map magit-log-mode-map))
+;;   (eval-after-load "package" '(evil-make-overriding-map package-menu-mode-map))
+;;   (eval-after-load "diff-mode" '(evil-make-overriding-map diff-mode-map))
+;;   (eval-after-load "compilation-mode" '(evil-make-overriding-map compilation-mode-map))
+;;   (eval-after-load "eshell-mode" '(evil-make-overriding-map eshell-mode-map))
+;;   (dolist (mode-map '((comint-mode . insert)
+;; 					  (with-editor-mode . insert)
+;; 					  (term-mode . insert)
+;; 					  (eshell-mode . insert)
+;; 					  (help-mode . emacs)
+;; 					  (fundamental-mode . normal)
+;; 					  (transmission-mode . emacs)
+;; 					  (transmission-files-mode . emacs)
+;; 					  (message-buffer-mode . emacs)
+;; 					  (dired-mode . emacs)
+;; 					  (undo-tree-visualizer-mode . emacs)
+;; 					  (compilation-mode . emacs)
+;; 					  (magit-mode . emacs)
+;; 					  (magit-log-mode . emacs)
+;; 					  (magit-popup-mode . emacs)))
+;;     (evil-set-initial-state `,(car mode-map) `,(cdr mode-map))))
 
-(add-hook 'git-commit-mode-hook
-		  (lambda () (evil-insert-state 1)))
+;; (add-hook 'git-commit-mode-hook
+;; 		  (lambda () (evil-insert-state 1)))
 
-(evil-define-command ak-current-file-name ()
-  "Copy the current buffer-file-name to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-					  default-directory
-                    (buffer-file-name))))
-    (when filename
-      (setq select-enable-clipboard t)
-      (kill-new filename)
-      (setq select-enable-clipboard nil)
-      (message "'%s' to the clipboard." filename)
-      filename)))
+;; (evil-define-command ak-current-file-name ()
+;;   "Copy the current buffer-file-name to the clipboard."
+;;   (let ((filename (if (equal major-mode 'dired-mode)
+;; 					  default-directory
+;;                     (buffer-file-name))))
+;;     (when filename
+;;       (setq select-enable-clipboard t)
+;;       (kill-new filename)
+;;       (setq select-enable-clipboard nil)
+;;       (message "'%s' to the clipboard." filename)
+;;       filename)))
 
-(evil-define-command ak-current-file-dir ()
-  "Copy the current file-name-directory to the clipboard."
-  (let ((filename (if (equal major-mode 'dired-mode)
-					  default-directory
-                    (buffer-file-name))))
-    (when filename
-      (setq select-enable-clipboard t)
-      (kill-new (file-name-directory filename))
-      (setq select-enable-clipboard nil)
-      (message "'%s' to the clipboard." (file-name-directory filename))
-      (file-name-directory filename))))
+;; (evil-define-command ak-current-file-dir ()
+;;   "Copy the current file-name-directory to the clipboard."
+;;   (let ((filename (if (equal major-mode 'dired-mode)
+;; 					  default-directory
+;;                     (buffer-file-name))))
+;;     (when filename
+;;       (setq select-enable-clipboard t)
+;;       (kill-new (file-name-directory filename))
+;;       (setq select-enable-clipboard nil)
+;;       (message "'%s' to the clipboard." (file-name-directory filename))
+;;       (file-name-directory filename))))
 
-(evil-define-operator ak-evil-erase (beg end type register yank-handler)
-  (interactive "<R><x><y>")
-  (evil-delete beg end type ?_ yank-handler))
+;; (evil-define-operator ak-evil-erase (beg end type register yank-handler)
+;;   (interactive "<R><x><y>")
+;;   (evil-delete beg end type ?_ yank-handler))
 
-(defun ak-evil-erase-line ()
-  (interactive)
-  (if (eq evil-state 'visual)
-	  (call-interactively 'ak-evil-erase)
-    (evil-delete (line-beginning-position) (1+ (line-end-position)) 'char ?_)))
+;; (defun ak-evil-erase-line ()
+;;   (interactive)
+;;   (if (eq evil-state 'visual)
+;; 	  (call-interactively 'ak-evil-erase)
+;;     (evil-delete (line-beginning-position) (1+ (line-end-position)) 'char ?_)))
 
-(evil-define-operator ak-evil-delete-char (beg end type)
-  :motion evil-forward-char
-  (interactive "<R>")
-  (evil-delete beg end type ?_))
+;; (evil-define-operator ak-evil-delete-char (beg end type)
+;;   :motion evil-forward-char
+;;   (interactive "<R>")
+;;   (evil-delete beg end type ?_))
 
-(evil-define-motion ak-end-of-line-or-block (count)
-  :jump t
-  :type inclusive
-  (let ((ak-line-end-position (1- (line-end-position))))
-    (if (or (eq evil-state 'visual)
-			(eq evil-state 'normal)
-			(eq evil-state 'operator)
-			(eq evil-state 'motion))
-		(if (or (= (point) (line-end-position))
-				(= (point) (1- (line-end-position))))
-			(forward-paragraph)
-		  (move-end-of-line count)))))
+;; (evil-define-motion ak-end-of-line-or-block (count)
+;;   :jump t
+;;   :type inclusive
+;;   (let ((ak-line-end-position (1- (line-end-position))))
+;;     (if (or (eq evil-state 'visual)
+;; 			(eq evil-state 'normal)
+;; 			(eq evil-state 'operator)
+;; 			(eq evil-state 'motion))
+;; 		(if (or (= (point) (line-end-position))
+;; 				(= (point) (1- (line-end-position))))
+;; 			(forward-paragraph)
+;; 		  (move-end-of-line count)))))
 
-(evil-define-motion ak-beginning-of-line-or-block ()
-  :jump t
-  :type exclusive
-  (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
-    (if (= (point) first-nonblank)
-		(backward-paragraph)
-      (back-to-indentation))))
+;; (evil-define-motion ak-beginning-of-line-or-block ()
+;;   :jump t
+;;   :type exclusive
+;;   (let ((first-nonblank (save-excursion (back-to-indentation) (point))))
+;;     (if (= (point) first-nonblank)
+;; 		(backward-paragraph)
+;;       (back-to-indentation))))
 
 ;;; }}}
 ;;; hooks {{{
@@ -391,7 +399,7 @@
 			(setq ibuffer-show-empty-filter-groups nil)
 			(ibuffer-switch-to-saved-filter-groups "default")))
 
-(use-package ibuffer-git)
+;; (use-package ibuffer-git)
 
 (setq ibuffer-formats
 	  '((
@@ -399,27 +407,27 @@
 		 (name 22 18 :left :elide)
 		 " " (size 9 -1 :right)
 		 " " (mode 20 16 :left :elide)
-		 " " (git-status 8 8 :left)
+		 ;; " " (git-status 8 8 :left)
 		 " " filename-and-process)))
 
 
-(setq ibuffer-hook nil)
-(add-hook 'ibuffer-hook
-		  (lambda ()
-			(setq-default ibuffer-saved-filter-groups
-						  (list (cons "default"
-									  (append
-									   '(("Help" (or (name . "\*Help\*")
-													 (name . "\*Apropos\*")
-													 (name . "\*info\*"))))
-									   '(("Dired" (mode . dired-mode)))
-									   '(("Temporary" (name . "\*.*\*")))
-									   (ibuffer-vc-generate-filter-groups-by-vc-root)
-									   '(("Magit" (or (mode . magit-status-mode)
-													  (mode . magit-commit))))))))
-			;; (ibuffer-vc-set-filter-groups-by-vc-root)
-			(ibuffer-switch-to-saved-filter-groups "default")
-			(ibuffer-jump-to-buffer (buffer-name (cadr (buffer-list))))))
+;; (setq ibuffer-hook nil)
+;; (add-hook 'ibuffer-hook
+;; 		  (lambda ()
+;; 			(setq-default ibuffer-saved-filter-groups
+;; 						  (list (cons "default"
+;; 									  (append
+;; 									   '(("Help" (or (name . "\*Help\*")
+;; 													 (name . "\*Apropos\*")
+;; 													 (name . "\*info\*"))))
+;; 									   '(("Dired" (mode . dired-mode)))
+;; 									   '(("Temporary" (name . "\*.*\*")))
+;; 									   (ibuffer-vc-generate-filter-groups-by-vc-root)
+;; 									   '(("Magit" (or (mode . magit-status-mode)
+;; 													  (mode . magit-commit))))))))
+;; 			;; (ibuffer-vc-set-filter-groups-by-vc-root)
+;; 			(ibuffer-switch-to-saved-filter-groups "default")
+;; 			(ibuffer-jump-to-buffer (buffer-name (cadr (buffer-list))))))
 
 (add-hook 'emacs-lisp-mode-hook (lambda () (lispy-mode 1)))
 
@@ -463,6 +471,16 @@
 ;;; }}}
 ;;; funcs {{{
 
+(defun ak-eval-outer ()
+  (interactive)
+  (save-excursion
+	(lispy-right 10)
+	(eval-last-sexp '-)))
+
+(defun ak-shell-command-on-buffer (shell-command-text)
+  (interactive "MShell command:")
+  (shell-command (format shell-command-text (shell-quote-argument buffer-file-name))))
+
 (defun ak-time ()
   (interactive)
   (message (current-time-string)))
@@ -477,7 +495,8 @@
 
 (defun ak-find-file-home (file)
   (interactive)
-  (lambda () (interactive) (find-file (expand-file-name (concat ak-home file)))))
+  (lambda () (interactive) (message file) (find-file (expand-file-name (concat ak-home file)))))
+
 
 (defun ak-half-page-down ()
   (interactive)
@@ -727,7 +746,7 @@ Repeated invocations toggle between the two most recently open buffers."
 	(call-interactively 'evil-yank)))
 
 (defun ak-format-buffer ()
-  "Format C++ code with astyle."
+  "Format code with clang-format."
   (interactive)
   (let ((p (point)))
 	(let (beg end)
@@ -753,8 +772,20 @@ Repeated invocations toggle between the two most recently open buffers."
    'upcase-region)
   (setq mark-active t)
   (exchange-point-and-mark)
-  (setq deactivate-mark NIL)
+  (setq deactivate-mark nil)
   (run-with-timer 0.1 nil (lambda () (setq mark-active nil))))
+
+(defun ak-select-line ()
+  (interactive)
+  (if (and (= (point) (line-end-position))
+		   mark-active)
+	  (end-of-line 2)
+	(end-of-line)
+	(set-mark (line-beginning-position))))
+
+(defun ak-evil-change (motion &optional count type)
+  (let ((motion (lambda () (interactive) (eval motion))))
+	(lambda () (interactive) (apply #'evil-change (evil-motion-range motion count type)))))
 
 ;; (load "server")
 ;; (unless (server-running-p) (start-named-server "main"))
@@ -764,7 +795,7 @@ Repeated invocations toggle between the two most recently open buffers."
 ;;; }}}
 
 
-;;;; YAS FUNCTIONS {{{
+;;; YAS FUNCTIONS {{{
 
 (defun aking/yas-expand-or-self-insert ()
   "Try to expand a snippet at a key before point.
@@ -985,7 +1016,21 @@ Otherwise insert space"
 (defun ak-compile ()
   (interactive)
   (ak-save-all)
-  (compile compile-command))
+  (compile compile-command)
+  (evil-insert-state))
+
+(defun ak-kill-compilation ()
+  (interactive)
+  (kill-compilation))
+
+(defun ak-push-mark ()
+  (interactive)
+  (push-mark))
+
+(defun ak-newline-below ()
+  (interactive)
+  (end-of-line)
+  (newline))
 
 ;;; }}}
 ;;; look {{{
@@ -1014,6 +1059,7 @@ Otherwise insert space"
 (set-face-attribute 'default nil :height 150)
 (set-face-attribute 'default nil :background "#000")
 (set-face-attribute 'fringe nil :background "#000")
+(set-face-attribute 'region nil :background "#05a")
 ;; (set-face-attribute 'font-lock-comment-face nil :foreground "#0cc")
 
 ;; (add-hook 'minibuffer-setup-hook
@@ -1044,20 +1090,20 @@ Otherwise insert space"
 ;; (add-to-list 'load-path "~/.emacs.d/hl-line+/")
 ;; (require 'hl-line+)
 
-(require 'ansi-color)
-(setq ansi-color-names-vector
-	  (vector (frame-parameter nil 'background-color)
-			  "#f57900" "#8ae234" "#edd400" "#729fcf"
-			  "#ad7fa8" "cyan3" "#eeeeec")
-	  ansi-term-color-vector ansi-color-names-vector
-	  ansi-color-map (ansi-color-make-color-map))
+;; (require 'ansi-color)
+;; (setq ansi-color-names-vector
+;; 	  (vector (frame-parameter nil 'background-color)
+;; 			  "#f57900" "#8ae234" "#edd400" "#729fcf"
+;; 			  "#ad7fa8" "cyan3" "#eeeeec")
+;; 	  ansi-term-color-vector ansi-color-names-vector
+;; 	  ansi-color-map (ansi-color-make-color-map))
+
 
 (setq evil-mode-line-format nil
 	  evil-normal-state-cursor '(box "#FFFF00")
 	  evil-emacs-state-cursor '(box "#00FFFF")
 	  evil-insert-state-cursor '(box "#FF00FF")
-	  evil-visual-state-cursor '(box "#F86155")
-	  )
+	  evil-visual-state-cursor '(box "#F86155"))
 
 (use-package all-the-icons
   :config
@@ -1221,17 +1267,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 
 ;;; }}}
 ;;; leader-map {{{
-(gdk :states '(normal visual)
-  "q"
-  (gkd 'evil-record-macro :timeout 1
-	   "<tab>" 'ak-outline-next-heading
-	   "-" 'ak-outline-next-heading
-	   "a" 'origami-recursively-toggle-node
-	   "r" 'origami-open-all-nodes
-	   "o" 'origami-recursively-toggle-node
-	   "m" 'origami-close-all-nodes))
 
-(gdk :states '(motion normal visual insert emacs)
+(gdk :keymaps 'override
+  ;; :states '(motion normal visual insert emacs)
   ;; :keymaps 'doc-view-mode-map
   "C-M-y"
   (gkd 'projectile-switch-project :timeout 1
@@ -1274,7 +1312,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 	   (gkd  '(lambda () (interactive)
 				;; (aking/view-pdf)
 				(aking/compile-project)
-			)
+				)
 		 :timeout 0.5
 		 "c" '(lambda () (interactive)
 				(aking/view-pdf)
@@ -1320,20 +1358,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;; }}}
 ;;; keymaps {{{
 
-(gdk :states '(motion normal visual emacs)
-  "(" 'ak-half-page-up)
-
-(gdk :states '(motion normal visual operator insert)
-  "s-<right>" 'move-end-of-line
-  "s-<left>" 'back-to-indentation)
-
-;; (define-key key-translation-map (kbd "C-x D") nil)
-
-;; (define-key minibuffer-local-map (kbd "s-<backspace>") 'ak-kill-line-0)
-
-;; (gdk :keymaps 'minibuffer-local-map
-;;   "s-<backspace>" 'ak-kill-line-0)
-
 ;; free some keybindings from evil-map for default bindings in underlying modes 
 (gdk :states  '(motion normal visual operator insert emacs)
   "C-k" nil								; kill-line restore
@@ -1344,25 +1368,31 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-w" nil
   "C-f" nil
   "C-b" nil
-  "h" nil
-  )
+  "h" nil)
 
 (gdk :keymaps 'override ;; :states  '(motion normal visual operator insert emacs)
   "M-x"   '(lambda () (interactive) (counsel-M-x ""))
+  "s-P"   '(lambda () (interactive) (counsel-M-x ""))
+  "s-p" 'eval-expression
+  "s-,"
+  (gkd (ak-find-file-home "yd/cfg/emacs/min.el") :timeout 0.5
+	   "i" (ak-find-file-home "yd/cfg/emacs/init.el"))
   "C-x C-j C-c" 'save-buffers-kill-emacs
   ;; "C-x C-j C-c" 'save-buffers-kill-terminal
-  "C-x k" 'ak-kill-current-buffer
-  "C-x b" 'ibuffer
+  "C-x C-j k" 'ak-kill-current-buffer
+  "s-E" 'counsel-ibuffer
   "C-x g" 'magit-status
   "C-x z" 'ak-stage-and-commit
   "C-x e" 'ak-eval-buffer
+  "C-<return>" 'ak-eval-outer
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
   "s-/" 'comment-line
-  "C-x f" 'projectile-find-file
+  "Ch-x f" 'projectile-find-file
+  "s-o" 'counsel-find-file
   "C-x C-j i" 'kill-compilation
-  "C-x C-j k <escape>" 'ak-switch-to-previous-buffer
-  "C-x C-j k C-[" 'ak-switch-to-previous-buffer
+  "C-x k <escape>" 'ak-switch-to-previous-buffer
+  "C-x k C-[" 'ak-switch-to-previous-buffer
 
   "C-x C-j d" (ak-dired-opener)
   "C-x C-j C-d" (ak-dired-opener nil t)
@@ -1374,8 +1404,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x C-j 0" 'ak-toggle-window-split
   "C-M-%" 'ak-query-replace-regexp-or-joker
   "C-x C-p" 'ak-buffer-file-name
-  "C-S-c" 'ak-buffer-file-name
-  "C-x p" 'ak-default-directory
+  "M-s-c" 'ak-buffer-file-name
+  "M-s-C" 'ak-default-directory
   
   ;; terminal
   "M-:" 'eval-expression
@@ -1385,12 +1415,10 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-h k" 'describe-key
 
   "C-c C-s" 'eval-buffer
-  "M-e" 'move-end-of-line
-  "M-a" 'move-beginning-of-line
+  
   "C-c C-y" 'ak-paste-after-prepending-nl
   "C-Y" 'ak-paste-after-prepending-2nl
   ;; "C-f" 'projectile-find-file
-  "s-d" 'ak-duplicate-after
   "C-M-S-t" 'mode-line-other-buffer
   "s-<return>" 'ak-make
   "M-s-g" 'ak-generate-makefile
@@ -1399,32 +1427,70 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "M-s-g" 'ak-generate-makefile
   "C-M-i" 'evil-jump-item
   "M-s-g" 'ak-generate-makefile
+
+  ;; emacs
+  "s-p" 'counsel-recentf
+  "s-M-C-P" 'ak-push-mark
+  "s-M-C-N" 'ak-newline-below
+  "s-M-C-G" 'grep
   "C-M-e" 'er/expand-region
-  "s-C-<up>" 'move-text-up
-  "s-C-<down>" 'move-text-down
+  "s-M-<right>" '(lambda () (interactive) (forward-whitespace 1))
+  "s-M-<left>" '(lambda () (interactive) (forward-whitespace -1))
+  "C-c +" 'evil-numbers/inc-at-pt
+  "C-c -" 'evil-numbers/dec-at-pt
+  "s-<prior>" 'outline-hide-body
+  "s-<next>" 'outline-toggle-children
+  "C-M-s-5" 'evil-jump-item
+  "C-s-x" (gkd 'evil-change :timeout 1
+			   "r" (gsk "^ i \"")
+			   "[" (gsk "^ i [")
+			   "g" (ak-evil-change '(evil-inner-paren))
+			   "f" (gsk "^ i <")
+			   "-" (gsk "^ i W")
+			   ":" (gsk "^ | :")
+			   "SPC" (gsk "^ | SPC")
+			   "\"" (gsk "^ | \"")
+			   "f" (gsk "^ | \"")
+			   ")" (gsk "^ | )")
+			   "}" (gsk "^ | }")
+			   "]" (gsk "^ | ]")
+			   ">" (gsk "^ | >")
+			   "c" (ak-evil-change '(evil-find-char 1 ?,))
+			   "." (gsk "^ | ."))
 
   ;; macos
+  "M-e" 'move-end-of-line
+  "M-a" 'move-beginning-of-line
+  "s-<right>" 'move-end-of-line
+  "s-<left>" 'back-to-indentation 
+  "s-<up>" 'beginning-of-buffer
+  "s-<down>" 'end-of-buffer
   "M-<right>" 'forward-word
-  "M-<left>" 'evil-backward-word-begin
+  "M-<left>" 'backward-word
+  ;; "M-<left>" 'evil-backward-word-begin
   "s-<backspace>" 'ak-kill-line-0
   "s-z" 'undo-tree-undo
+  "M-s-z" 'undo-tree-redo
+  "s-c" 'kill-ring-save
+  "s-x" 'kill-region
+  ;; "C-k" 'kill-line
   
   ;; idea
-  "s-x" 'kill-region
-  "s-c" 'kill-ring-save
   "S-<f10>" 'ak-compile
+  "s-<f2>" 'ak-kill-compilation
   "M-S-<f10>" 'compile
   "<f2>" 'next-error
   "M-s-l" 'ak-format-buffer
   
-  "C-x z" 'counsel-recentf
-
   ;; sublime
-  "s-D" 'ak-duplicate-after
+  "s-C-<up>" 'move-text-up
+  "s-C-<down>" 'move-text-down
+  "s-D" 'ak-duplicate
   "C-S-k" 'kill-whole-line
   "M-u" 'ak-upcase-previous-WORD
-  "C-k" 'kill-line
-  )
+  "s-l" 'ak-select-line
+  "s-d" 'mark-word)
+
 
 ;; ----------------------------------------------------------------------------
 ;; motion keymap
@@ -1447,8 +1513,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "m" 'evil-backward-char
   "n" 'evil-forward-word-begin
   "N" 'evil-forward-WORD-begin
-  "p" 'evil-backward-word-begin
-  "P" 'evil-backward-WORD-begin
+  "h" 'evil-backward-word-begin
+  "H" 'evil-backward-WORD-begin
   "\\" 'evil-forward-word-end
   "b" 'evil-forward-WORD-end
   "d" 'ak-beginning-of-line-or-block
@@ -1462,7 +1528,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   ;; "b" (gkd 'evil-find-char-to :timeout 0.5
   ;;    "r" 'ak-test)
   "|" 'evil-find-char-to
-  "h" 'evil-search-forward
   "z" 'evil-jump-item
   "}" (gsk "C-o")
   "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
@@ -1480,8 +1545,8 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "e" (gkd 'evil-change :timeout 1
 		   "r" (gsk "^ i \"")
 		   "[" (gsk "^ i [")
-		   "(" (gsk "^ i (")
-		   "g" (gsk "^ i <")
+		   "g" (ak-evil-change '(evil-inner-paren))
+		   "f" (gsk "^ i <")
 		   "-" (gsk "^ i W")
 		   ":" (gsk "^ | :")
 		   "SPC" (gsk "^ | SPC")
@@ -1491,8 +1556,9 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 		   "}" (gsk "^ | }")
 		   "]" (gsk "^ | ]")
 		   ">" (gsk "^ | >")
-		   "c" (gsk "^ | ,")
+		   "c" (ak-evil-change '(evil-find-char 1 ?,))
 		   "." (gsk "^ | ."))
+  
   "j" 'ak-yank
   "y" 'ak-evil-yank
   "a" 'evil-delete
@@ -1537,7 +1603,7 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "." 'org-cycle
   "(" 'outline-up-heading)
 
-(evil-set-initial-state 'messages-buffer-mode 'motion)
+;; (evil-set-initial-state 'messages-buffer-mode 'motion)
 
 (add-hook 'lispy-mode-hook
 		  (lambda ()
