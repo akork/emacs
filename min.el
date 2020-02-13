@@ -22,8 +22,9 @@
 ;;; }}}
 ;;; PATH set {{{
 
-;; (setenv "SHELL" "/usr/local/bin/bash")
-;; (setenv "LANG" "") 						;for lualatex
+(setenv "SHELL" "/usr/local/bin/bash")
+(setenv "LANG" "") 						;for lualatex
+(setenv "SHELL_LOG" "")
 
 ;;; }}}
 ;;; before init {{{
@@ -33,9 +34,19 @@
 (setq ak-home "/Users/AK/")
 (setq-default explicit-shell-file-name "/usr/local/bin/bash")
 
+(setq prev-time (current-time))
+
 (defun ak-log (mes)
   (interactive)
-  (message (concat mes " : " (current-time-string))))
+  (message (concat (format "%-20s" mes) " : " (format-time-string "%H:%M:%S.%N") " delta= "
+				   (format-time-string "%S.%N" (time-subtract (current-time) prev-time))))
+  (setq prev-time (current-time)))
+
+(defun ak-log-symbol (mes &rest args)
+  (interactive)
+  (message (concat (format "%-20s" mes) " : " (format-time-string "%H:%M:%S.%N") " delta= "
+				   (format-time-string "%S.%N" (time-subtract (current-time) prev-time))))
+  (setq prev-time (current-time)))
 
 ;;; }}}
 ;;; straight {{{
@@ -51,17 +62,22 @@
 ;;                           ("elpa" . "http://tromey.com/elpa/")))
 
 (defvar bootstrap-version)
+
+(ak-log "straight bootstrap begin")
 (let ((bootstrap-file
 	   (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
 	  (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
+	(message "loading bootstrap-file")
     (with-current-buffer
 		(url-retrieve-synchronously
 		 "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
 		 'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
+  (ak-log "load bootstrap")
   (load bootstrap-file nil 'nomessage))
+(ak-log "straight bootstrap end")
 
 (straight-use-package 'use-package)
 (setq straight-use-package-by-default 101)
@@ -70,20 +86,22 @@
 ;;; packages {{{
 (ak-log "packages")
 
-(use-package exec-path-from-shell
-  :config
-  (exec-path-from-shell-initialize))
+;; (use-package exec-path-from-shell
+;;   :config
+;;   (exec-path-from-shell-initialize))
+
+(advice-add 'use-package :before 'ak-log-symbol)
 
 (use-package counsel)                   ; counsel-mxOA
-
 (use-package lispy)
+
 (use-package persistent-overlays
   :config
   (setq persistent-overlays-directory "~/.emacs.d/.emacs-persistent-overlays/"))
 
 (use-package flymake-json)
 
-(use-package meghanada)
+;; (use-package meghanada)
 
 (use-package magit
   :commands (magit-status))
@@ -91,12 +109,12 @@
 (use-package lua-mode)
 (use-package smex)
 
-(use-package ein)
+;; (use-package ein)
 (use-package move-text)
 
-(use-package helm)
+;; (use-package helm)
 
-(use-package jedi)
+;; (use-package jedi)
 ;; (use-package auctex)
 (use-package yasnippet)
 (use-package yasnippet-snippets)
@@ -104,15 +122,18 @@
 
 (use-package evil-numbers)
 
-(use-package ag)
+;; (use-package ag)
 
-(use-package ranger)
-(use-package dired-du)
-(use-package dired-quick-sort)
+;; (use-package ranger)
+;; (use-package dired-du)
+;; (use-package dired-quick-sort)
 
 (use-package undo-tree)
-
+;; (use-package disk-usage)
+(use-package yaml-mode)
 ;; (use-package smex)
+
+(use-package rtags)
 
 ;;; }}}
 ;;; folding {{{
@@ -255,45 +276,45 @@
 
 ;; }}}
 ;;; overriding keymap {{{
-(defvar ak-keymap-mode-map (make-sparse-keymap)
-  "Keymap for `ak-kkeymap-mode'.")
+;; (defvar ak-keymap-mode-map (make-sparse-keymap)
+;;   "Keymap for `ak-kkeymap-mode'.")
 
-      ;;;###autoload
-(define-minor-mode ak-keymap-mode
-  "A minor mode so that my key settings override annoying major modes."
-  ;; If init-value is not set to t, this mode does not get enabled in
-  ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
-  ;; More info: http://emacs.stackexchange.com/q/16693/115
-  :init-value t
-  :lighter " gmap"
-  :keymap ak-keymap-mode-map)
+;;       ;;;###autoload
+;; (define-minor-mode ak-keymap-mode
+;;   "A minor mode so that my key settings override annoying major modes."
+;;   ;; If init-value is not set to t, this mode does not get enabled in
+;;   ;; `fundamental-mode' buffers even after doing \"(global-ak-keymap-mode 1)\".
+;;   ;; More info: http://emacs.stackexchange.com/q/16693/115
+;;   :init-value t
+;;   :lighter " gmap"
+;;   :keymap ak-keymap-mode-map)
 
-      ;;;###autoload
-(define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode
-  (lambda ()
-    (when (not (derived-mode-p
-				'dired-mode 'org-mode))
-      (ak-keymap-mode)))
-  )
+;;       ;;;###autoload
+;; (define-globalized-minor-mode global-ak-keymap-mode ak-keymap-mode
+;;   (lambda ()
+;;     (when (not (derived-mode-p
+;; 				'dired-mode 'org-mode))
+;;       (ak-keymap-mode)))
+;;   )
 
-;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
-;; The keymaps in `emulation-mode-map-alists' take precedence over
-;; `minor-mode-map-alist'
+;; ;; https://github.com/jwiegley/use-package/blob/master/bind-key.el
+;; ;; The keymaps in `emulation-mode-map-alists' take precedence over
+;; ;; `minor-mode-map-alist'
 
-                                        ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
+;;                                         ;(delight 'ak-keymap-mode nil ak-keymap-mode) ; do not display mode name in mode line
 
-;; (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
+;; ;; (add-to-list 'emulation-mode-map-alists `((ak-keymap-mode . ,ak-keymap-mode-map)))
 
-(defun turn-off-my-mode ()
-  "Turn off my-mode."
-  (ak-keymap-mode -1))
+;; (defun turn-off-my-mode ()
+;;   "Turn off my-mode."
+;;   (ak-keymap-mode -1))
 
-(add-hook 'dired-mode-hook #'turn-off-my-mode)
+;; (add-hook 'dired-mode-hook #'turn-off-my-mode)
 
 ;; }}}
 ;;; evil setup {{{
 
-(message "before evil")
+(ak-log "before evil")
 
 ;; (use-package evil
 ;;   :config
@@ -471,11 +492,23 @@
 ;;; }}}
 ;;; funcs {{{
 
-(defun ak-eval-outer ()
+(defun ak-eval (&optional save-exc)
   (interactive)
-  (save-excursion
-	(lispy-right 10)
-	(eval-last-sexp '-)))
+  (if (use-region-p)
+	  (eval-region)
+	(let ((p (point)))
+	  (lispy-right 10)
+	  (eval-last-sexp '-)
+	  (unless save-exc
+		(goto-char p)))))
+
+(defun ak-eval-forward ()
+  (interactive)
+  (if (use-region-p)
+	  (eval-region)
+	(ak-eval t)
+	(lispy-down 1)
+	(lispy-left 1)))
 
 (defun ak-shell-command-on-buffer (shell-command-text)
   (interactive "MShell command:")
@@ -508,12 +541,6 @@
 
 (global-set-key (kbd "<next>") 'ak-half-page-down)
 (global-set-key (kbd "<prior>") 'ak-half-page-up)
-
-(defun ak-eval ()
-  (interactive)
-  (if (use-region-p)
-	  (eval-region)
-    (eval-last-sexp (point))))
 
 (defun ak-indent-buffer ()
   (interactive)
@@ -787,6 +814,10 @@ Repeated invocations toggle between the two most recently open buffers."
   (let ((motion (lambda () (interactive) (eval motion))))
 	(lambda () (interactive) (apply #'evil-change (evil-motion-range motion count type)))))
 
+(defun ak-shell-command-on-region (str)
+  (interactive "sShell command on region: ")
+  (shell-command-on-region (region-beginning) (region-end) str nil t))
+
 ;; (load "server")
 ;; (unless (server-running-p) (start-named-server "main"))
 
@@ -881,8 +912,8 @@ Otherwise insert space"
              (newline)
              (yas-expand-snippet (yas-lookup-snippet "ens")))
     (progn (LaTeX-indent-line)
-      ;; (reindent-then-newline-and-indent)
-      (yas-expand-snippet (yas-lookup-snippet "ens")))))
+		   ;; (reindent-then-newline-and-indent)
+		   (yas-expand-snippet (yas-lookup-snippet "ens")))))
 
 (defun aking/latex-convert-to-big ()
   (interactive)
@@ -1016,8 +1047,8 @@ Otherwise insert space"
 (defun ak-compile ()
   (interactive)
   (ak-save-all)
-  (compile compile-command)
-  (evil-insert-state))
+  (compile compile-command))
+
 
 (defun ak-kill-compilation ()
   (interactive)
@@ -1038,7 +1069,8 @@ Otherwise insert space"
 ;; (use-package atom-dark-theme)
 ;; (load-theme 'atom-dark t)
 
-(message (concat "before theme: " (current-time-string)))
+(ak-log "before theme")
+
 (use-package spacemacs-theme
   :defer t
   :custom
@@ -1048,7 +1080,7 @@ Otherwise insert space"
 (load-theme 'spacemacs-light t)
 (load-theme 'spacemacs-dark t)
 
-(message (concat "after theme: " (current-time-string)))
+(ak-log "after theme")
 
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -1370,10 +1402,16 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-b" nil
   "h" nil)
 
+(defun lambda-interactive (body)
+  (lambda () (interactive) (eval body)))
+
+(defalias 'li 'lambda-interactive)
+
 (gdk :keymaps 'override ;; :states  '(motion normal visual operator insert emacs)
   "M-x"   '(lambda () (interactive) (counsel-M-x ""))
   "s-P"   '(lambda () (interactive) (counsel-M-x ""))
   "s-p" 'eval-expression
+  "s-W" (li '(kill-buffer (current-buffer)))
   "s-,"
   (gkd (ak-find-file-home "yd/cfg/emacs/min.el") :timeout 0.5
 	   "i" (ak-find-file-home "yd/cfg/emacs/init.el"))
@@ -1384,12 +1422,13 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-x g" 'magit-status
   "C-x z" 'ak-stage-and-commit
   "C-x e" 'ak-eval-buffer
-  "C-<return>" 'ak-eval-outer
+  "C-<return>" 'ak-eval
+  "s-<return>" 'ak-eval-forward
   "C-x C-p" 'projectile-switch-project
   "C-x ;" 'comment-line
   "s-/" 'comment-line
-  "Ch-x f" 'projectile-find-file
-  "s-o" 'counsel-find-file
+  "C-x f" 'projectile-find-file
+  "s-o" (li '(counsel-find-file "~/yd"))
   "C-x C-j i" 'kill-compilation
   "C-x k <escape>" 'ak-switch-to-previous-buffer
   "C-x k C-[" 'ak-switch-to-previous-buffer
@@ -1420,7 +1459,6 @@ If no FONT-SIZE provided, reset the font size to its default variable."
   "C-Y" 'ak-paste-after-prepending-2nl
   ;; "C-f" 'projectile-find-file
   "C-M-S-t" 'mode-line-other-buffer
-  "s-<return>" 'ak-make
   "M-s-g" 'ak-generate-makefile
   "C-M-i" 'evil-jump-item
   ;;    :predicate '(not (derived-mode-p 'term-mode))
@@ -1622,14 +1660,14 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 ;;      "r" 'previous-line)))
 
 ;; (evil-set-initial-state 'transmission-mode 'emacs)
-(use-package transmission
-  ;; :init
-  ;; (evil-set-initial-state 'transmission-mode 'emacs)
-  :general
-  (:states 'emacs
-		   :keymaps 'transmission-mode-map
-		   "c" 'next-line
-		   "r" 'previous-line))
+;; (use-package transmission
+;;   ;; :init
+;;   ;; (evil-set-initial-state 'transmission-mode 'emacs)
+;;   :general
+;;   (:states 'emacs
+;; 		   :keymaps 'transmission-mode-map
+;; 		   "c" 'next-line
+;; 		   "r" 'previous-line))
 
 (add-hook 'undo-tree-visualizer-mode-hook
 		  (lambda ()
@@ -1688,10 +1726,10 @@ If no FONT-SIZE provided, reset the font size to its default variable."
 
 
 
-(add-hook 'dired-mode-hook
-		  (lambda ()
-			(evil-define-key
-			  'normal dired-mode-map "r" 'dired-previous-line)))
+;; (add-hook 'dired-mode-hook
+;; 		  (lambda ()
+;; 			(evil-define-key
+;; 			  'normal dired-mode-map "r" 'dired-previous-line)))
 
 ;; (add-hook 'magit-status-mode-hook
 ;;   (lambda ()
