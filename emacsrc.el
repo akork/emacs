@@ -240,6 +240,7 @@
 (ak-log "feel")
 
 ;; (electric-pair-mode 1)
+(setq backup-directory-alist `(("" . ,(concat ak-home ".emacs.d/backup"))))
 (global-auto-revert-mode t)
 (global-undo-tree-mode)
 (setq visible-bell 1)
@@ -1128,7 +1129,7 @@ Otherwise insert space"
 				"t" (ak-find-file-home "Library/Application Support/transmission-daemon/settings.json"))
 	   "v" (ak-find-file-home "yd/cfg/vim/min.vim")
 	   "e"
-	   (gkd (ak-find-file-home "yd/cfg/emacs/min.el") :timeout 0.5
+	   (gkd (ak-find-file-home "yd/cfg/emacs/emacsrc.el") :timeout 0.5
 			"i" (ak-find-file-home "yd/cfg/emacs/init.el"))
 	   "q" (ak-find-file-home "yd/cfg/qmk_firmware/keyboards/dz60/keymaps/ak-first/keymap.c")
 	   "s" (ak-find-file-home "yd/cfg/sh/sh.sh")
@@ -1238,7 +1239,7 @@ Otherwise insert space"
   
   "C-x C-j C-c" 'save-buffers-kill-emacs
   ;; "C-x C-j C-c" 'save-buffers-kill-terminal
-  "C-x C-j k" 'ak-kill-current-buffer
+  "C-M-s-S-k" 'ak-kill-current-buffer
   "s-E" 'counsel-ibuffer
   "C-x g" 'magit-status
   "C-x z" 'ak-stage-and-commit
@@ -1274,8 +1275,10 @@ Otherwise insert space"
   "C-x 3" 'split-window-right
   "C-h k" 'describe-key
 
-  "C-M-S-s-o" 'other-window
+  "C-M-s-S-o" 'other-window
   "C-M-s-!" 'delete-other-windows
+  "C-M-s-}" 'enlarge-window-horizontally
+  "C-M-s-{" 'shrink-window-horizontally
   "C-c C-s" 'eval-buffer
 
   "C-c C-y" 'ak-paste-after-prepending-nl
