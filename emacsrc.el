@@ -93,52 +93,57 @@
 (advice-add 'use-package :before 'ak-log-symbol)
 
 (use-package counsel)                   ; counsel-mxOA
-
 (use-package lispy)
-
+(use-package smex)
+(use-package evil-numbers)
+(use-package move-text)
 (use-package persistent-overlays
   :config
   (setq persistent-overlays-directory "~/.emacs.d/.emacs-persistent-overlays/"))
-
-(use-package flymake-json)
-
 (use-package magit
   :commands (magit-status))
+(use-package yasnippet)
+(use-package yasnippet-snippets
+  :config
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets")))
 
 (use-package lua-mode)
+(use-package yaml-mode)
+(use-package typescript-mode)
 
-(use-package smex)
-
-(use-package ein)
-
-(use-package move-text)
-
-(use-package yasnippet)
-(use-package yasnippet-snippets)
-(setq yas-snippet-dirs '("~/.emacs.d/snippets"))
-
-(use-package evil-numbers)
+;; (use-package flymake-json)
 
 ;; (use-package dired-du)
 ;; (use-package dired-quick-sort)
 
 (use-package undo-tree)
 
-(use-package yaml-mode)
+;; (use-package rtags)
+;; (use-package flycheck-rtags)
+;; (setq rtags-socket-address "10.0.1.33:8989")
+;; (setq rtags-tramp-enabled t)
+;; (setq rtags-autostart-diagnostics t)
+;; (setq password-cache-expiry nil)
+;; (setq rtags-rc-log-enabled t)
 
-(use-package rtags)
-(use-package flycheck-rtags)
-(setq rtags-socket-address "10.0.1.33:8989")
-(setq rtags-tramp-enabled t)
-;; (add-to-list 'tramp-remote-path "/usr/local/bin")
-;; (setq rtags-socket-file "/root/.rdm")
-(setq rtags-autostart-diagnostics t)
-(setq password-cache-expiry nil)
-(setq rtags-rc-log-enabled t)
+;; (use-package elpy)
 
-(use-package elpy)
 
-(use-package typescript-mode)
+;; (use-package eglot)
+;; (add-to-list 'eglot-server-programs
+             ;; `(python-mode . ("pyls" "-v" "--tcp" "--host"
+;; "localhost" "--port" :autoport)))
+
+(use-package lsp-mode)
+
+(use-package lsp-python-ms
+  :ensure t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-python-ms)
+                          (lsp))))  ; or lsp-deferred
+
+;; (use-package ein)
 
 ;;; }}}
 ;;; folding {{{
@@ -943,60 +948,62 @@ Otherwise insert space"
 ;;; }}}
 ;;; look {{{
 
-;; (use-package atom-dark-theme)
-;; (load-theme 'atom-dark t)
-
 (ak-log "before theme")
 
-(use-package spacemacs-theme
-  :defer t
-  :custom
-  (spacemacs-theme-comment-bg nil)
-  (spacemacs-theme-comment-italic t))
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+(global-hl-line-mode t)
+(show-paren-mode t)
 
-(load-theme 'spacemacs-light t)
-(load-theme 'spacemacs-dark t)
+(use-package spacemacs-theme :defer t)
 
+(defun ak-switch-theme ()
+  (interactive)
+  (unless (boundp 'ak-dark-theme)
+	(setq ak-dark-theme nil))
+  (if ak-dark-theme
+	  (progn (load-theme 'spacemacs-light t)
+			 (setq ak-dark-theme nil))
+	(progn (load-theme 'spacemacs-dark t)
+		   (setq ak-dark-theme t)
+		   (set-face-attribute 'default nil :height 150)
+		   (set-face-attribute 'default nil :background "#000")
+		   (set-face-attribute 'fringe nil :background "#000")
+		   (set-face-attribute 'region nil :background "#05a")
+		   (set-face-attribute 'font-lock-comment-face nil :foreground "#1a808e" :background "#000" :slant 'italic)
+		   ;; (set-face-attribute hl-line-face nil :background "#000")
+		   (set-face-attribute 'cursor nil :foreground "#fff")))
+  (set-face-attribute hl-line-face nil :box '(:color "#bc6ec5" :line-width 1))
+  (set-face-attribute 'show-paren-match nil :background "#bc6ec5" :foreground "#000" :box '(:color "#bc6ec5" :line-width 1)))
+
+(ak-switch-theme)
 (ak-log "after theme")
 
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(toggle-scroll-bar -1)
-;; (scroll-bar-mode -1)
-(setq frame-resize-pixelwise t)
+;; (menu-bar-mode -1)
+;; (toggle-scroll-bar nil)
+;; (setq frame-resize-pixelwise t)
 
-(set-face-attribute 'default nil :height 150)
-(set-face-attribute 'default nil :background "#000")
-(set-face-attribute 'fringe nil :background "#000")
-(set-face-attribute 'region nil :background "#05a")
-
-(eval-after-load "ido"
-  '(set-face-attribute 'ido-first-match nil
-					   :foreground "#0f0"))
+;; (eval-after-load "ido"
+  ;; '(set-face-attribute 'ido-first-match nil
+					   ;; :foreground "#0f0"))
 
 ;; (set-face-attribute 'mode-line nil
 ;;     :background "#00f")
 
-(set-face-attribute 'minibuffer-prompt nil
-					:foreground "#0f0")
+;; (set-face-attribute 'minibuffer-prompt nil
+					;; :foreground "#0f0")
 
-(global-hl-line-mode 1)
-(set-face-attribute hl-line-face nil
-					:background "#333")
+;; (set-face-attribute hl-line-face nil
+					;; :background "#333")
 
-(show-paren-mode 1)
-(set-face-attribute 'show-paren-match nil
-					:background "#a0f"
-					;; :box '(:color "deep pink" :line-width 2)
-					)
 
-(use-package all-the-icons
-  :config
-  ;; all-the-icons doesn't work without font-lock+
-  ;; And font-lock+ doesn't have autoloads
-  (use-package font-lock+
-	:straight (:host github :repo "emacsmirror/font-lock-plus")
-	:config (require 'font-lock+)))
+;; (use-package all-the-icons
+;;   :config
+;;   ;; all-the-icons doesn't work without font-lock+
+;;   ;; And font-lock+ doesn't have autoloads
+;;   (use-package font-lock+
+;; 	:straight (:host github :repo "emacsmirror/font-lock-plus")
+;; 	:config (require 'font-lock+)))
 
 ;; disables scroll bars on new frames
 (defun ak-disable-scroll-bars (frame)
