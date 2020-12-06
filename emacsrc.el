@@ -922,7 +922,7 @@ Otherwise insert space"
 (global-set-key "\M-Y" 'ak-yank-pop-forwards)
 
 ;;; }}}
-;;; compile {{{
+;;; compile functions {{{
 
 (ak-log "compile")
 
@@ -930,7 +930,6 @@ Otherwise insert space"
   (interactive)
   (ak-save-all)
   (compile compile-command))
-
 
 (defun ak-kill-compilation ()
   (interactive)
@@ -1231,106 +1230,50 @@ Otherwise insert space"
 (defun lambda-interactive (body)
   (lambda () (interactive) (eval body)))
 
+(defun lambda-interactive-funcall (fn &rest args)
+  (lambda () (interactive) (apply fn args)))
+
 (defalias 'li 'lambda-interactive)
+(defalias 'lif 'lambda-interactive-funcall)
 
 (gdk :keymaps 'override ;; :states  '(motion normal visual operator insert emacs)
-  "M-x"   '(lambda () (interactive) (counsel-M-x ""))
-  "s-P"   (li '(counsel-M-x ""))
+  "M-x"   (lif 'counsel-M-x "")
+  "s-P"   (lif 'counsel-M-x "")
+  "s-f" 'swiper
   "s-p" 'eval-expression
-  "s-W" (li '(kill-buffer (current-buffer)))
+  "C-M-s-S-k" (lif 'kill-buffer (current-buffer))
   "s-,"
-  (gkd (ak-find-file-home "yd/cfg/emacs/min.el") :timeout 0.5
+  (gkd (ak-find-file-home "yd/cfg/emacs/emacsrc.el") :timeout 0.5
 	   "i" (ak-find-file-home "yd/cfg/emacs/init.el"))
-  "M-s-<return>" (gsk "s-<right> <return>")
-  
-  
-  "C-x C-j C-c" 'save-buffers-kill-emacs
-  ;; "C-x C-j C-c" 'save-buffers-kill-terminal
-  "C-M-s-S-k" 'ak-kill-current-buffer
+  "s-p" 'counsel-buffer-or-recentf
   "s-E" 'counsel-ibuffer
-  "C-x g" 'magit-status
-  "C-x z" 'ak-stage-and-commit
-  "C-x e" ' ak-eval-buffer
+  "s-o" (lif 'counsel-find-file)
+  "s-O" (lif 'counsel-find-file "~/yd")
+  
   "C-<return>" 'ak-eval
   "S-<return>" 'ak-eval-forward
-  "C-x C-p" 'projectile-switch-project
-  "C-x ;" 'comment-line
-  "s-/" 'comment-line
-  "C-x f" 'projectile-find-file
-  "s-o" (li '(counsel-find-file))
-  "s-O" (li '(counsel-find-file "~/yd"))
-  "C-x C-j i" 'kill-compilation
-  "C-x k <escape>" 'ak-switch-to-previous-buffer
-  "C-x k C-[" 'ak-switch-to-previous-buffer
-
-  "C-x C-j d" (ak-dired-opener)
-  "C-x C-j C-d" (ak-dired-opener nil t)
-  "C-x C-j D" 'projectile-dired
-  "C-x C-j M-d" (ak-dired-opener "~/yd")
-  "C-x C-j s-d" (ak-dired-opener "~/yd")
-
-  "M-<f12>" 'ak-eshell-other-window
-  "C-x C-j 0" 'ak-toggle-window-split
-  "C-M-%" 'ak-query-replace-regexp-or-joker
-  "C-x C-p" 'ak-buffer-file-name
+  
+  ;; info
+  "C-h k" 'describe-key
   "M-s-c" 'ak-buffer-file-name
   "M-s-C" 'ak-default-directory
 
-  ;; terminal
-  "M-:" 'eval-expression
-  "C-x 0" 'delete-window
-  "C-x 3" 'split-window-right
-  "C-h k" 'describe-key
-
+  ;; layout
   "C-M-s-S-o" 'other-window
   "C-M-s-!" 'delete-other-windows
-  "C-M-s-}" 'enlarge-window-horizontally
-  "C-M-s-{" 'shrink-window-horizontally
-  "C-c C-s" 'eval-buffer
-
-  "C-c C-y" 'ak-paste-after-prepending-nl
-  "C-Y" 'ak-paste-after-prepending-2nl
-  ;; "C-f" 'projectile-find-file
-  "C-M-S-t" 'mode-line-other-buffer
-  "M-s-g" 'ak-generate-makefile
-  "C-M-i" 'evil-jump-item
-  ;;    :predicate '(not (derived-mode-p 'term-mode))
-  "M-s-g" 'ak-generate-makefile
-  "C-M-i" 'evil-jump-item
-  "M-s-g" 'ak-generate-makefile
-
-  ;; emacs
-  "s-p" 'counsel-recentf
+  "C-M-s-}" (lif 'enlarge-window-horizontally 12)
+  "C-M-s-{" (lif 'shrink-window-horizontally 12)
+  "C-x C-j 0" 'ak-toggle-window-split
+  "C-x k <escape>" 'ak-switch-to-previous-buffer
+  
+  ;; editing
   "s-M-C-P" 'ak-push-mark
-  "s-M-C-N" 'ak-newline-below
-  "s-M-C-G" 'grep
-  "C-M-e" 'er/expand-region
-  "s-M-<right>" '(lambda () (interactive) (forward-whitespace 1))
-  "s-M-<left>" '(lambda () (interactive) (forward-whitespace -1))
-  "C-c +" 'evil-numbers/inc-at-pt
-  "C-c -" 'evil-numbers/dec-at-pt
+  "M-s-<return>" (gsk "s-<right> <return>")
+  "s-M-<right>" '(lif 'forward-whitespace 1)
+  "s-M-<left>" '(lif 'forward-whitespace -1)
+  "s-/" 'comment-line
   "s-<prior>" 'outline-hide-body
   "s-<next>" 'outline-toggle-children
-  "C-M-s-5" 'evil-jump-item
-  "C-s-x" (gkd 'evil-change :timeout 1
-			   "r" (gsk "^ i \"")
-			   "[" (gsk "^ i [")
-			   "g" (ak-evil-change '(evil-inner-paren))
-			   "f" (gsk "^ i <")
-			   "-" (gsk "^ i W")
-			   ":" (gsk "^ | :")
-			   "SPC" (gsk "^ | SPC")
-			   "\"" (gsk "^ | \"")
-			   "f" (gsk "^ | \"")
-			   ")" (gsk "^ | )")
-			   "}" (gsk "^ | }")
-			   "]" (gsk "^ | ]")
-			   ">" (gsk "^ | >")
-			   "c" (ak-evil-change '(evil-find-char 1 ?,))
-			   "." (gsk "^ | ."))
-
-  ;; macos
-  "M-e" 'move-end-of-line
   "M-a" 'move-beginning-of-line
   "s-<right>" 'move-end-of-line
   "s-<left>" 'back-to-indentation
@@ -1338,13 +1281,24 @@ Otherwise insert space"
   "s-<down>" 'end-of-buffer
   "M-<right>" 'forward-word
   "M-<left>" 'backward-word
-  ;; "M-<left>" 'evil-backward-word-begin
   "s-<backspace>" 'ak-kill-line-0
   "s-z" 'undo-tree-undo
   "M-s-z" 'undo-tree-redo
   "s-c" 'kill-ring-save
   "s-x" 'kill-region
-  ;; "C-k" 'kill-line
+  "s-D" 'ak-duplicate
+
+  "s-C-<up>" 'move-text-up
+  "s-C-<down>" 'move-text-down
+  
+  "C-M-e" 'er/expand-region
+  "s-l" 'ak-select-line
+  "s-d" 'mark-word
+
+  "s-M-C-G" 'grep
+  "C-c +" 'evil-numbers/inc-at-pt
+  "C-c -" 'evil-numbers/dec-at-pt
+  "C-M-%" 'ak-query-replace-regexp-or-joker
 
   ;; idea
   "S-<f10>" 'ak-compile
@@ -1353,125 +1307,17 @@ Otherwise insert space"
   "<f2>" 'next-error
   "M-s-l" 'ak-format-buffer
 
+  "C-x z" 'ak-stage-and-commit
+
   ;; sublime
   "s-g" (gsk "C-M-s")
   "s-G" (gsk "C-M-r")
-  "s-C-<up>" 'move-text-up
-  "s-C-<down>" 'move-text-down
-  "s-D" 'ak-duplicate
-  "C-S-k" 'kill-whole-line
-  "M-u" 'ak-upcase-previous-WORD
-  "s-l" 'ak-select-line
-  "s-d" 'mark-word
 
   ;; refactoring
-  "<f12>" 'rtags-find-symbol-at-point)
-
-
-;; ----------------------------------------------------------------------------
-;; motion keymap
-;; ----------------------------------------------------------------------------
-
-(gdk :states '(motion normal visual operator)
-  ;; state altering:
-  "o" 'evil-append
-  "O" 'evil-append-line
-  ;; "i" 'evil-insert
-  ;; "I" 'evil-insert-line
-  "l" 'evil-open-below
-  "L" 'evil-open-above
-  ;; visual:
-  "_" 'evil-visual-char
-  "." (gsk "0 _ $ m")
-  "H" 'evil-visual-line
-  ;; basic movement:
-  "t" 'evil-forward-char
-  "m" 'evil-backward-char
-  "n" 'evil-forward-word-begin
-  "N" 'evil-forward-WORD-begin
-  "h" 'evil-backward-word-begin
-  "H" 'evil-backward-WORD-begin
-  "\\" 'evil-forward-word-end
-  "b" 'evil-forward-WORD-end
-  "d" 'ak-beginning-of-line-or-block
-  "s" 'ak-end-of-line-or-block
-  "c" 'evil-next-line
-  "r" 'evil-previous-line
-  "f" 'ak-half-page-up
-  "g" 'ak-half-page-down
-  ;; advanced movement:
-  "j" 'evil-forward-WORD-begin
-  ;; "b" (gkd 'evil-find-char-to :timeout 0.5
-  ;;    "r" 'ak-test)
-  "|" 'evil-find-char-to
-  "z" 'evil-jump-item
-  "}" (gsk "C-o")
-  "{" '(lambda () (interactive) (evil-first-non-blank) (evil-previous-open-brace))
-  ;; "%" 'ak-jump-item
-  ")" 'ak-outline-next-heading
-  "(" 'outline-previous-heading
-  "-" 'outline-toggle-children
-  ;; yank/paste:
-  "w" 'ak-paste-after-prepending-nl
-  "W" 'ak-paste-before-appending-nl
-  "v" 'ak-paste-after-prepending-2nl
-  "V" 'ak-paste-before-appending-2nl
-  ;; delete/change:
-  "^" 'evil-change
-  "e" (gkd 'evil-change :timeout 1
-		   "r" (gsk "^ i \"")
-		   "[" (gsk "^ i [")
-		   "g" (ak-evil-change '(evil-inner-paren))
-		   "f" (gsk "^ i <")
-		   "-" (gsk "^ i W")
-		   ":" (gsk "^ | :")
-		   "SPC" (gsk "^ | SPC")
-		   "\"" (gsk "^ | \"")
-		   "f" (gsk "^ | \"")
-		   ")" (gsk "^ | )")
-		   "}" (gsk "^ | }")
-		   "]" (gsk "^ | ]")
-		   ">" (gsk "^ | >")
-		   "c" (ak-evil-change '(evil-find-char 1 ?,))
-		   "." (gsk "^ | ."))
-
-  "j" 'ak-yank
-  "y" 'ak-evil-yank
-  "a" 'evil-delete
-  "k" 'ak-evil-erase-line
-  "q" 'ak-evil-delete-char
-  "\\" 'evil-record-macro
-  "K" 'evil-delete-backward-char
-  ;; misc:
-  "C-S-u" 'upcase-word
-  "'" 'evil-join
-  "J" (gsk "a <return>")
-  ;; folding:
-  "x" nil
-  "x r" 'outline-show-all
-  "x a" 'outline-show-subtree
-  "<tab>" 'outline-toggle-children
-  "x m" 'outline-hide-body)
-
-(gdk :states '(motion normal)
-  "Z" (gsk "D %")
-  "G" (gsk "0 D c s")
-  "C" (gsk "D r s o s m")
-  "F" (gsk "D s o r"))
-
-(gdk :states '(visual)
-  "k" 'ak-evil-erase
-  "c" (gsk "<down> $ m")
-  ;; "r" (gsk "<up> $ <left>")
-  "Z" (gsk "D %")
-  "C" (gsk "0 D c s")
-  "R" (gsk "s D r")
-  "G" (gsk "c s m")
-  "F" (gsk "D s o r"))
-
-;; ----------------------------------------------------------------------------
-;; minor modes keymaps
-;; ----------------------------------------------------------------------------
+  "<f12>" 'rtags-find-symbol-at-point
+  
+  "M-<f12>" 'ak-eshell-other-window
+  )
 
 (gdk :keymaps 'org-mode-map
   :states '(motion normal visual)
@@ -1479,33 +1325,10 @@ Otherwise insert space"
   "." 'org-cycle
   "(" 'outline-up-heading)
 
-;; (evil-set-initial-state 'messages-buffer-mode 'motion)
-
 (add-hook 'lispy-mode-hook
 		  (lambda ()
 			(gdk :states '('normal 'visual) :keymaps 'lispy-mode-map
 			  ";" 'lispy-comment)))
-
-
-;; (add-hook
-;;  'transmission-mode-hook
-;;  (lambda ()
-;;    (evil-set-initial-state 'transmission-mode 'emacs)
-;;    (gdk
-;;      :states 'emacs
-;;      :keymaps 'transmission-mode-map
-;;      "c" 'next-line
-;;      "r" 'previous-line)))
-
-;; (evil-set-initial-state 'transmission-mode 'emacs)
-;; (use-package transmission
-;;   ;; :init
-;;   ;; (evil-set-initial-state 'transmission-mode 'emacs)
-;;   :general
-;;   (:states 'emacs
-;; 		   :keymaps 'transmission-mode-map
-;; 		   "c" 'next-line
-;; 		   "r" 'previous-line))
 
 (add-hook 'undo-tree-visualizer-mode-hook
 		  (lambda ()
@@ -1516,28 +1339,6 @@ Otherwise insert space"
 			  "r" 'previous-line
 			  "f" 'undo-tree-visualize-switch-branch-right
 			  "g" 'undo-tree-visualize-switch-branch-left)))
-
-(add-hook 'help-mode-hook
-		  (lambda ()
-			(gdk
-			  :states 'emacs
-			  :keymaps 'help-mode-map
-			  ;; ")" 'ak-half-page-down
-			  ;; "(" 'ak-half-page-up
-			  )))
-
-(add-hook 'transmission-files-mode-hook
-		  (lambda ()
-			;; (evil-set-initial-state 'transmission-files-mode 'emacs)
-			(gdk
-			  :states 'emacs
-			  :keymaps 'transmission-files-mode-map
-			  "RET" 'ak-transmission-find-file
-			  "s-RET" 'ak-transmission-find-file-dir
-			  "c" 'next-line
-			  "r" 'previous-line)))
-
-;; (evil-make-overriding-map transmission-files-mode-map)
 
 (add-hook 'dired-mode-hook
 		  (lambda ()
@@ -1561,72 +1362,4 @@ Otherwise insert space"
 			  "<mouse-2>" 'dired-find-file
 			  "<mouse-3>" 'dired-find-file-other-window)))
 
-
-
-
-;; (add-hook 'dired-mode-hook
-;; 		  (lambda ()
-;; 			(evil-define-key
-;; 			  'normal dired-mode-map "r" 'dired-previous-line)))
-
-;; (add-hook 'magit-status-mode-hook
-;;   (lambda ()
-;;     (gdk
-;;       :keymaps 'magit-status-mode-map
-;;       "C-x g" 'magit-commit-popup
-;;       "(" 'magit-commit-popup
-;;       "," 'magit-rebase-popup
-;;       "c" 'magit-section-forward
-;;       "r" 'magit-section-backward
-;;       )))
-
-(add-hook 'ibuffer-mode-hook
-		  (lambda ()
-			(gdk
-			  :keymaps 'ibuffer-mode-map
-			  :state 'emacs
-			  "c" 'ibuffer-forward-line
-			  "r" 'ibuffer-backward-line
-			  "g" 'ibuffer-forward-filter-group
-			  "f" 'ibuffer-backward-filter-group
-			  "a" 'ibuffer-visit-buffer)))
-
-(gdk :keymaps 'package-menu-mode-map
-  :states 'emacs
-  "r" 'previous-line)
-
-;; (add-hook 'magit-popup-mode-hook
-;;   (lambda ()
-;;     (gdk :keymaps 'magit-popup-mode-map
-;;       :states 'emacs
-;;       "r" nil)))
-
-;; (evil-global-set-key 'normal "r" 'evil-previous-line)
-
-;; (evil-define-minor-mode-key 'normal 'dired-mode "r" 'dired-previous-line)
-
-;; (gdk-ov :states '(motion normal visual)
-;;   :predicate '(derived-mode-p 'magit-status-mode)
-;;   "k" 'magit-commit-popup
-;;   "j" 'magit-rebase-popup
-;;   "c" 'evil-next-line
-;;   "r" 'evil-previous-line)
-
-;;   (gdk :keymaps 'latex-mode-map
-;;     "SPC" 'aking/yas-expand-or-self-insert
-;;     "q" 'aking/project-sq)
-
 ;;; }}}
-;;; test stuff {{{
-
-(require 'ansi-color)
-(defun my/ansi-colorize-buffer ()
-  (let ((buffer-read-only nil))
-	(ansi-color-apply-on-region (point-min) (point-max))))
-(add-hook 'compilation-filter-hook 'my/ansi-colorize-buffer)
-
-;;; }}}
-
-;;;(message "config successfully loaded")
-
-;; mergetest
