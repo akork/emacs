@@ -26,9 +26,23 @@
 (setenv "LANG" "") 						;for lualatex
 (setenv "SHELL_LOG" "")
 
-;;; }}}
-;;; before init {{{
+;; (require 'ansi-color)
+;; (setq ansi-color-names-vector
+	  ;; (vector (frame-parameter nil 'background-color)
+			  ;; "#f57900" "#8ae234" "#edd400" "#729fcf"
+			  ;; "#ad7fa8" "cyan3" "#eeeeec")
+	  ;; ansi-term-color-vector ansi-color-names-vector
+	  ;; ansi-color-map (ansi-color-make-color-map))
 
+(require 'ansi-color)
+(defun my/ansi-colorize-buffer ()
+  (let ((buffer-read-only nil))
+	(ansi-color-apply-on-region (point-min) (point-max))))
+(add-hook 'compilation-filter-hook 'my/ansi-colorize-buffer)
+
+;;; }}}
+
+;;; before init {{{
 ;; (setq lexical-binding t)
 (setq enable-recursive-minibuffers t)
 (setq ak-home "/Users/AK/")
@@ -100,8 +114,8 @@
 (use-package persistent-overlays
   :config
   (setq persistent-overlays-directory "~/.emacs.d/.emacs-persistent-overlays/"))
-(use-package magit
-  :commands (magit-status))
+(use-package magit  
+  :commands (magit-status ))
 (use-package yasnippet)
 (use-package yasnippet-snippets
   :config
@@ -131,7 +145,7 @@
 
 ;; (use-package eglot)
 ;; (add-to-list 'eglot-server-programs
-             ;; `(python-mode . ("pyls" "-v" "--tcp" "--host"
+;; `(python-mode . ("pyls" "-v" "--tcp" "--host"
 ;; "localhost" "--port" :autoport)))
 
 (use-package lsp-mode)
@@ -142,6 +156,8 @@
   :hook (python-mode . (lambda ()
                           (require 'lsp-python-ms)
                           (lsp))))  ; or lsp-deferred
+(use-package flycheck)
+(use-package company)
 
 ;; (use-package ein)
 
@@ -1227,8 +1243,11 @@ Otherwise insert space"
   "C-b" nil
   "h" nil)
 
-(defun lambda-interactive (body)
-  (lambda () (interactive) (eval body)))
+
+;; ''var = (quote (quote var))
+;; funcall & apply receives symbol or lambda
+(defun lambda-interactive (&rest args)
+  (lambda () (interactive) (mapcar 'eval args)))
 
 (defun lambda-interactive-funcall (fn &rest args)
   (lambda () (interactive) (apply fn args)))
@@ -1241,7 +1260,7 @@ Otherwise insert space"
   "s-P"   (lif 'counsel-M-x "")
   "s-f" 'swiper
   "s-p" 'eval-expression
-  "C-M-s-S-k" (lif 'kill-buffer (current-buffer))
+  "C-M-s-S-k" (li '(kill-buffer (current-buffer)))
   "s-,"
   (gkd (ak-find-file-home "yd/cfg/emacs/emacsrc.el") :timeout 0.5
 	   "i" (ak-find-file-home "yd/cfg/emacs/init.el"))
@@ -1249,6 +1268,7 @@ Otherwise insert space"
   "s-E" 'counsel-ibuffer
   "s-o" (lif 'counsel-find-file)
   "s-O" (lif 'counsel-find-file "~/yd")
+  "M-s-o" (ak-dired-opener)
   
   "C-<return>" 'ak-eval
   "S-<return>" 'ak-eval-forward
@@ -1264,7 +1284,7 @@ Otherwise insert space"
   "C-M-s-}" (lif 'enlarge-window-horizontally 12)
   "C-M-s-{" (lif 'shrink-window-horizontally 12)
   "C-x C-j 0" 'ak-toggle-window-split
-  "C-x k <escape>" 'ak-switch-to-previous-buffer
+  "C-x k ESC" 'ak-switch-to-previous-buffer
   
   ;; editing
   "s-M-C-P" 'ak-push-mark
@@ -1309,15 +1329,26 @@ Otherwise insert space"
 
   "C-x z" 'ak-stage-and-commit
 
-  ;; sublime
+  ;; sublimeo
   "s-g" (gsk "C-M-s")
   "s-G" (gsk "C-M-r")
 
   ;; refactoring
-  "<f12>" 'rtags-find-symbol-at-point
-  
-  "M-<f12>" 'ak-eshell-other-window
-  )
+  "M-o" 'lsp-find-declaration-or-joker
+  "<f12>" 'lsp-find-declaration
+  "S-<f12>" 'lsp-find-references
+  "<f2>" 'lsp-rename
+  ;; "<f12>" 'rtags-find-symbol-at-point
+  "M-<f12>" 'ak-eshell-other-window)
+
+(defun lsp-find-declaration-or-joker ()
+  (interactive)
+  (if (derived-mode-p 'minibuffer-inactive-mode)
+	  (ivy-dispatching-done)
+	(lsp-find-declaration)))
+
+(gdk :keymaps 'ivy-minibuffer-map
+  "s-g" 'ivy-dispatching-done)
 
 (gdk :keymaps 'org-mode-map
   :states '(motion normal visual)
